@@ -7,7 +7,9 @@ class StorageService {
   static const String userIdKey = 'user_id';
   static const String userRoleKey = 'user_role';
 
-  static late SharedPreferences _prefs;
+  static SharedPreferences? _prefs;
+  static bool get _isInitialized => _prefs != null;
+
 
   /// Initialize SharedPreferences
   static Future<void> init() async {
@@ -16,51 +18,55 @@ class StorageService {
 
   /// Save token
   static Future<void> saveToken(String token) async {
-    await _prefs.setString(tokenKey, token);
+    if (!_isInitialized) await init();
+    await _prefs?.setString(tokenKey, token);
   }
 
   /// Get token
   static String? getToken() {
-    return _prefs.getString(tokenKey);
+    return _prefs?.getString(tokenKey);
   }
 
   /// Save user data
   static Future<void> saveUserData(String userData) async {
-    await _prefs.setString(userKey, userData);
+    if (!_isInitialized) await init();
+    await _prefs?.setString(userKey, userData);
   }
 
   /// Get user data
   static String? getUserData() {
-    return _prefs.getString(userKey);
+    return _prefs?.getString(userKey);
   }
 
   /// Save user ID
   static Future<void> saveUserId(String userId) async {
-    await _prefs.setString(userIdKey, userId);
+    if (!_isInitialized) await init();
+    await _prefs?.setString(userIdKey, userId);
   }
 
   /// Get user ID
   static String? getUserId() {
-    return _prefs.getString(userIdKey);
+    return _prefs?.getString(userIdKey);
   }
 
   /// Save user role
   static Future<void> saveUserRole(String role) async {
-    await _prefs.setString(userRoleKey, role);
+    if (!_isInitialized) await init();
+    await _prefs?.setString(userRoleKey, role);
   }
 
   /// Get user role
   static String? getUserRole() {
-    return _prefs.getString(userRoleKey);
+    return _prefs?.getString(userRoleKey);
   }
 
   /// Clear all data (logout)
   static Future<void> clearAll() async {
-    await _prefs.clear();
+    await _prefs?.clear();
   }
 
   /// Check if user is logged in
   static bool isLoggedIn() {
-    return _prefs.containsKey(tokenKey);
+    return _prefs?.containsKey(tokenKey) ?? false;
   }
 }

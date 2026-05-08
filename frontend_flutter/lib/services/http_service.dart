@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'storage_service.dart';
+import '../utils/storage_service.dart';
 
 /// HTTP Interceptor for adding auth token
 class AuthInterceptor extends Interceptor {

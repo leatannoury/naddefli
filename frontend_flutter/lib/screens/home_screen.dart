@@ -19,8 +19,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadServices();
-    _loadBookings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadServices();
+      _loadBookings();
+    });
   }
 
   void _loadServices() {

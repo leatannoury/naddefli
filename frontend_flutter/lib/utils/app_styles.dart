@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// App Colors
 class AppColors {
   static const Color primary = Color(0xFF5B9BFF);
@@ -11,8 +13,6 @@ class AppColors {
   static const Color gray = Color(0xFF9CA3AF);
   static const Color darkGray = Color(0xFF6B7280);
 }
-
-import 'package:flutter/material.dart';
 
 /// App Styles & Spacing
 class AppStyles {

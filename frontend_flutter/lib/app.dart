@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../providers/service_provider.dart';
-import '../providers/booking_provider.dart';
-import '../utils/storage_service.dart';
-import 'splash_screen.dart';
-import 'onboarding_screen.dart';
-import 'login_screen.dart';
-import 'register_screen.dart';
-import 'home_screen.dart';
-import 'booking_screen.dart';
+import 'providers/auth_provider.dart';
+import 'providers/service_provider.dart';
+import 'providers/booking_provider.dart';
+import 'utils/storage_service.dart';
+import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/booking_screen.dart';
+import 'models/service.dart';
 
 /// Main App Widget
 class NaddefliApp extends StatelessWidget {
@@ -54,7 +55,7 @@ class NaddefliApp extends StatelessWidget {
                     ?.settings
                     .arguments;
             return BookingScreen(
-              service: service,
+              service: service as Service,
             );
           },
         },
