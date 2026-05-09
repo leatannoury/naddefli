@@ -145,9 +145,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
               const SizedBox(height: 24),
               _buildSectionTitle('Schedule'),
               const SizedBox(height: 12),
-              _buildDatePicker(),
-              const SizedBox(height: 16),
-              _buildTimePicker(),
+              _buildSchedulePicker(),
               const SizedBox(height: 24),
               _buildSectionTitle('Location'),
               const SizedBox(height: 12),
@@ -342,52 +340,21 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     );
   }
 
-  Widget _buildDatePicker() {
+  Widget _buildSchedulePicker() {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _pickDate,
-            icon: const Icon(Icons.event_outlined),
-            label: Text(DateFormat('EEE, MMM d, yyyy').format(_selectedDate)),
-          ),
+        _ScheduleTile(
+          icon: Icons.event_outlined,
+          title: 'Day',
+          value: DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
+          onTap: _pickDate,
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 72,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 10,
-            itemBuilder: (context, index) {
-              final date = DateTime.now().add(Duration(days: index + 1));
-              final isSelected = DateFormat('yyyy-MM-dd').format(date) ==
-                  DateFormat('yyyy-MM-dd').format(_selectedDate);
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  selected: isSelected,
-                  showCheckmark: false,
-                  selectedColor: AppColors.primary,
-                  label: SizedBox(
-                    width: 56,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(DateFormat('EEE').format(date)),
-                        Text(DateFormat('d MMM').format(date)),
-                      ],
-                    ),
-                  ),
-                  labelStyle: TextStyle(
-                    color: isSelected ? AppColors.white : AppColors.black,
-                    fontSize: 12,
-                  ),
-                  onSelected: (_) => setState(() => _selectedDate = date),
-                ),
-              );
-            },
-          ),
+        _ScheduleTile(
+          icon: Icons.access_time,
+          title: 'Time',
+          value: _selectedTime,
+          onTap: _pickTime,
         ),
       ],
     );
@@ -406,54 +373,47 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   }
 
   Future<void> _pickTime() async {
-    final parts = _selectedTime.split(':');
-    final picked = await showTimePicker(
+    await showModalBottomSheet<void>(
       context: context,
-      initialTime: TimeOfDay(
-        hour: int.parse(parts.first),
-        minute: int.parse(parts.last),
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-    );
-    if (picked != null && mounted) {
-      setState(() {
-        _selectedTime =
-            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-      });
-    }
-  }
-
-  Widget _buildTimePicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _pickTime,
-            icon: const Icon(Icons.access_time),
-            label: Text(_selectedTime),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: _timeSlots.map((time) {
-            final isSelected = _selectedTime == time;
-            return ChoiceChip(
-              label: Text(time),
-              selected: isSelected,
-              showCheckmark: false,
-              selectedColor: AppColors.secondary,
-              labelStyle: TextStyle(
-                color: isSelected ? AppColors.white : AppColors.black,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(AppStyles.paddingLarge),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Choose Time', style: AppStyles.headingSmall),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: _timeSlots.map((time) {
+                  final selected = _selectedTime == time;
+                  return ChoiceChip(
+                    label: Text(time),
+                    selected: selected,
+                    showCheckmark: false,
+                    selectedColor: AppColors.secondary,
+                    labelStyle: TextStyle(
+                      color: selected ? AppColors.white : AppColors.black,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    onSelected: (_) {
+                      setState(() => _selectedTime = time);
+                      Navigator.pop(context);
+                    },
+                  );
+                }).toList(),
               ),
-              onSelected: (_) => setState(() => _selectedTime = time),
-            );
-          }).toList(),
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -564,5 +524,55 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
         ),
       );
     }
+  }
+}
+
+class _ScheduleTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+
+  const _ScheduleTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppStyles.paddingMedium),
+        decoration: BoxDecoration(
+          color: AppColors.lightGray.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+          border: Border.all(color: AppColors.lightGray),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style:
+                          TextStyle(fontSize: 12, color: AppColors.darkGray)),
+                  const SizedBox(height: 2),
+                  Text(value,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.gray),
+          ],
+        ),
+      ),
+    );
   }
 }

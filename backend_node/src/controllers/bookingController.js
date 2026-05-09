@@ -21,6 +21,7 @@ exports.createBooking = async (req, res) => {
 
     // Validate input
     if (!service_id || !booking_date || !booking_time || !address || !city) {
+      await t.rollback();
       return sendError(res, 'Missing required fields', 400);
     }
 

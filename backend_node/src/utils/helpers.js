@@ -53,6 +53,14 @@ const calculatePrice = (basePrice, options = {}) => {
     finalPrice += (bathrooms_count * 30);
     // Kitchens are $40 each
     finalPrice += (kitchens_count * 40);
+  } else {
+    const quantity = Math.max(
+      parseInt(room_count, 10) || 0,
+      parseInt(bathrooms_count, 10) || 0,
+      parseInt(kitchens_count, 10) || 0,
+      1
+    );
+    finalPrice = finalPrice * quantity;
   }
 
   // Deep cleaning adds 50% to the total

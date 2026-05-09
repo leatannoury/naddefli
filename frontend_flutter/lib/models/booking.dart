@@ -10,7 +10,8 @@ class Booking {
   final String city;
   final String? notes;
   final double totalPrice;
-  final String status; // pending, accepted, on_the_way, started, completed, cancelled
+  final String
+      status; // pending, accepted, on_the_way, started, completed, cancelled
   final bool isCustom;
   final String? propertyType;
   final int roomCount;
@@ -44,23 +45,32 @@ class Booking {
 
   /// Factory constructor for JSON deserialization
   factory Booking.fromJson(Map<String, dynamic> json) {
+    final dateValue = json['booking_date']?.toString();
+    final totalValue = double.tryParse(json['total_price']?.toString() ?? '');
+
     return Booking(
       id: json['id'] ?? '',
       userId: json['user_id'] ?? '',
       cleanerId: json['cleaner_id'],
       serviceId: json['service_id'] ?? '',
-      bookingDate: DateTime.parse(json['booking_date']),
+      bookingDate: dateValue == null
+          ? DateTime.now()
+          : (DateTime.tryParse(dateValue) ?? DateTime.now()),
       bookingTime: json['booking_time'] ?? '',
       address: json['address'] ?? '',
       city: json['city'] ?? '',
       notes: json['notes'],
-      totalPrice: double.parse(json['total_price'].toString()),
+      totalPrice: totalValue ?? 0,
       status: json['status'] ?? 'pending',
-      isCustom: json['is_custom'] == 1 || json['is_custom'] == true,
+      isCustom: json['is_custom'] == 1 ||
+          json['is_custom'] == true ||
+          json['is_custom'] == 'true',
       propertyType: json['property_type'],
-      roomCount: json['room_count'] ?? 0,
-      bathroomsCount: json['bathrooms_count'] ?? 0,
-      kitchensCount: json['kitchens_count'] ?? 0,
+      roomCount: int.tryParse(json['room_count']?.toString() ?? '') ?? 0,
+      bathroomsCount:
+          int.tryParse(json['bathrooms_count']?.toString() ?? '') ?? 0,
+      kitchensCount:
+          int.tryParse(json['kitchens_count']?.toString() ?? '') ?? 0,
       cleaningType: json['cleaning_type'] ?? 'normal',
       extras: json['extras'],
       createdAt: json['created_at'] != null

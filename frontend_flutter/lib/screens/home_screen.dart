@@ -373,6 +373,33 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
+        if (bookingProvider.error != null) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppStyles.paddingLarge),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: AppColors.error, size: 48),
+                  const SizedBox(height: 12),
+                  Text(
+                    bookingProvider.error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.darkGray),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: bookingProvider.fetchMyBookings,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         if (bookingProvider.bookings.isEmpty) {
           return Center(
             child: Column(
@@ -417,6 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return RefreshIndicator(
           onRefresh: bookingProvider.fetchMyBookings,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(AppStyles.paddingLarge),
             children: [
               Container(

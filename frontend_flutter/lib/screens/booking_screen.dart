@@ -18,10 +18,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   late DateTime _selectedDate;
   String _selectedTime = "09:00";
-  String _propertyType = 'Whole House';
-  int _roomCount = 2;
-  int _bathroomCount = 1;
-  int _kitchenCount = 1;
+  int _quantity = 1;
   String _cleaningType = 'normal';
   final Set<String> _extras = {};
   final _addressController = TextEditingController();
@@ -49,18 +46,12 @@ class _BookingScreenState extends State<BookingScreen> {
   ];
 
   final List<String> _availableExtras = const [
-    'Inside windows',
-    'Inside fridge',
-    'Inside oven',
-    'Balcony',
     'Eco products',
+    'Bring supplies',
   ];
 
   double _calculateTotal() {
-    var total = widget.service.basePrice;
-    total += _roomCount * 20;
-    total += _bathroomCount * 30;
-    total += _kitchenCount * 40;
+    var total = widget.service.basePrice * _quantity;
     total += _extras.length * 15;
     if (_cleaningType == 'deep') {
       total *= 1.5;
@@ -140,9 +131,10 @@ class _BookingScreenState extends State<BookingScreen> {
               const SizedBox(height: 12),
               _buildSchedulePicker(),
               const SizedBox(height: 24),
-              const Text('Cleaning Details', style: AppStyles.headingSmall),
+              Text('${widget.service.name} Details',
+                  style: AppStyles.headingSmall),
               const SizedBox(height: 12),
-              _buildCleaningDetails(),
+              _buildServiceDetails(),
               const SizedBox(height: 20),
               // Address
               _buildTextField(
@@ -242,159 +234,58 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.event_outlined),
-                  label: Text(DateFormat('EEE, MMM d').format(_selectedDate)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _pickTime,
-                  icon: const Icon(Icons.access_time),
-                  label: Text(_selectedTime),
-                ),
-              ),
-            ],
+          _ScheduleTile(
+            icon: Icons.event_outlined,
+            title: 'Day',
+            value: DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
+            onTap: _pickDate,
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 72,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                final date = DateTime.now().add(Duration(days: index + 1));
-                final isSelected = DateFormat('yyyy-MM-dd').format(date) ==
-                    DateFormat('yyyy-MM-dd').format(_selectedDate);
-                return ChoiceChip(
-                  selected: isSelected,
-                  label: SizedBox(
-                    width: 54,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(DateFormat('EEE').format(date)),
-                        Text(DateFormat('d MMM').format(date)),
-                      ],
-                    ),
-                  ),
-                  onSelected: (_) => setState(() => _selectedDate = date),
-                  selectedColor: AppColors.primary,
-                  labelStyle: TextStyle(
-                    color: isSelected ? AppColors.white : AppColors.black,
-                    fontSize: 12,
-                  ),
-                  showCheckmark: false,
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _timeSlots.map((time) {
-                final isSelected = _selectedTime == time;
-                return ChoiceChip(
-                  label: Text(time),
-                  selected: isSelected,
-                  onSelected: (_) => setState(() => _selectedTime = time),
-                  selectedColor: AppColors.secondary,
-                  showCheckmark: false,
-                  labelStyle: TextStyle(
-                    color: isSelected ? AppColors.white : AppColors.black,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                );
-              }).toList(),
-            ),
+          const SizedBox(height: 10),
+          _ScheduleTile(
+            icon: Icons.access_time,
+            title: 'Time',
+            value: _selectedTime,
+            onTap: _pickTime,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCleaningDetails() {
-    final isRoomOnly = _propertyType == 'Room Only';
+  Widget _buildServiceDetails() {
+    final label = _quantityLabel();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 8,
-          children: ['Whole House', 'Room Only'].map((type) {
-            return ChoiceChip(
-              label: Text(type),
-              selected: _propertyType == type,
-              selectedColor: AppColors.primary,
-              showCheckmark: false,
-              labelStyle: TextStyle(
-                color:
-                    _propertyType == type ? AppColors.white : AppColors.black,
-              ),
-              onSelected: (_) {
-                setState(() {
-                  _propertyType = type;
-                  if (type == 'Room Only') {
-                    _bathroomCount = 0;
-                    _kitchenCount = 0;
-                    if (_roomCount == 0) _roomCount = 1;
-                  } else {
-                    if (_bathroomCount == 0) _bathroomCount = 1;
-                    if (_kitchenCount == 0) _kitchenCount = 1;
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        _buildCounter(isRoomOnly ? 'Rooms to clean' : 'Rooms', _roomCount,
-            (value) => setState(() => _roomCount = value.clamp(1, 12).toInt())),
-        if (!isRoomOnly) ...[
-          _buildCounter(
-              'Bathrooms',
-              _bathroomCount,
-              (value) =>
-                  setState(() => _bathroomCount = value.clamp(0, 8).toInt())),
-          _buildCounter(
-              'Kitchens',
-              _kitchenCount,
-              (value) =>
-                  setState(() => _kitchenCount = value.clamp(0, 3).toInt())),
+        if (label != null) _buildCounter(label, _quantity),
+        if (_supportsCleaningType()) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ['normal', 'deep'].map((type) {
+              final selected = _cleaningType == type;
+              return ChoiceChip(
+                selected: selected,
+                showCheckmark: false,
+                selectedColor: AppColors.secondary,
+                label:
+                    Text(type == 'deep' ? 'Deep cleaning' : 'Normal cleaning'),
+                labelStyle: TextStyle(
+                  color: selected ? AppColors.white : AppColors.black,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                ),
+                onSelected: (_) => setState(() => _cleaningType = type),
+              );
+            }).toList(),
+          ),
         ],
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: ['normal', 'deep'].map((type) {
-            final selected = _cleaningType == type;
-            return ChoiceChip(
-              selected: selected,
-              showCheckmark: false,
-              selectedColor: AppColors.secondary,
-              label: Text(type == 'deep' ? 'Deep cleaning' : 'Normal cleaning'),
-              labelStyle: TextStyle(
-                color: selected ? AppColors.white : AppColors.black,
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-              ),
-              onSelected: (_) => setState(() => _cleaningType = type),
-            );
-          }).toList(),
-        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _availableExtras.map((extra) {
+          children: _extrasForService().map((extra) {
             final selected = _extras.contains(extra);
             return FilterChip(
               label: Text(extra),
@@ -411,7 +302,43 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildCounter(String label, int value, ValueChanged<int> onChanged) {
+  String? _quantityLabel() {
+    final name = widget.service.name.toLowerCase();
+    if (name.contains('kitchen')) return 'Kitchens';
+    if (name.contains('bathroom')) return 'Bathrooms';
+    if (name.contains('bedroom')) return 'Bedrooms / rooms';
+    if (name.contains('window')) return 'Window groups';
+    if (name.contains('sofa')) return 'Sofa seats';
+    if (name.contains('office')) return 'Office rooms';
+    return null;
+  }
+
+  bool _supportsCleaningType() {
+    final name = widget.service.name.toLowerCase();
+    return !name.contains('pest');
+  }
+
+  List<String> _extrasForService() {
+    final name = widget.service.name.toLowerCase();
+    if (name.contains('kitchen')) {
+      return ['Inside oven', 'Inside fridge', ..._availableExtras];
+    }
+    if (name.contains('bathroom')) {
+      return ['Mold treatment', 'Tile scrub', ..._availableExtras];
+    }
+    if (name.contains('window')) {
+      return ['Inside and outside', 'Balcony windows', ..._availableExtras];
+    }
+    if (name.contains('sofa')) {
+      return ['Stain treatment', 'Deodorizing', ..._availableExtras];
+    }
+    if (name.contains('pest')) {
+      return ['Kitchen focus', 'Bathroom focus', 'Pet-safe treatment'];
+    }
+    return _availableExtras;
+  }
+
+  Widget _buildCounter(String label, int value) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -422,10 +349,11 @@ class _BookingScreenState extends State<BookingScreen> {
       child: Row(
         children: [
           Expanded(
-              child: Text(label,
-                  style: const TextStyle(fontWeight: FontWeight.w600))),
+            child: Text(label,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
           IconButton(
-            onPressed: value > 0 ? () => onChanged(value - 1) : null,
+            onPressed: value > 1 ? () => setState(() => _quantity--) : null,
             icon: const Icon(Icons.remove_circle_outline),
           ),
           SizedBox(
@@ -436,7 +364,7 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
           ),
           IconButton(
-            onPressed: () => onChanged(value + 1),
+            onPressed: () => setState(() => _quantity++),
             icon: const Icon(Icons.add_circle_outline),
           ),
         ],
@@ -488,20 +416,73 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _pickTime() async {
-    final parts = _selectedTime.split(':');
-    final picked = await showTimePicker(
+    await showModalBottomSheet<void>(
       context: context,
-      initialTime: TimeOfDay(
-        hour: int.parse(parts.first),
-        minute: int.parse(parts.last),
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(AppStyles.paddingLarge),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Choose Time', style: AppStyles.headingSmall),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: _timeSlots.map((time) {
+                  final selected = _selectedTime == time;
+                  return ChoiceChip(
+                    label: Text(time),
+                    selected: selected,
+                    showCheckmark: false,
+                    selectedColor: AppColors.secondary,
+                    labelStyle: TextStyle(
+                      color: selected ? AppColors.white : AppColors.black,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    onSelected: (_) {
+                      setState(() => _selectedTime = time);
+                      Navigator.pop(context);
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final parts = _selectedTime.split(':');
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay(
+                        hour: int.parse(parts.first),
+                        minute: int.parse(parts.last),
+                      ),
+                    );
+                    if (picked != null && mounted) {
+                      setState(() {
+                        _selectedTime =
+                            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                      });
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(Icons.schedule),
+                  label: const Text('Pick another time'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (picked != null && mounted) {
-      setState(() {
-        _selectedTime =
-            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-      });
-    }
   }
 
   Future<void> _confirmBooking(BuildContext context) async {
@@ -523,11 +504,11 @@ class _BookingScreenState extends State<BookingScreen> {
       address: _addressController.text,
       city: _cityController.text,
       notes: _notesController.text,
-      isCustom: true,
-      propertyType: _propertyType,
-      roomCount: _roomCount,
-      bathroomsCount: _bathroomCount,
-      kitchensCount: _kitchenCount,
+      isCustom: false,
+      propertyType: widget.service.name,
+      roomCount: _roomCountForService(),
+      bathroomsCount: _bathroomCountForService(),
+      kitchensCount: _kitchenCountForService(),
       cleaningType: _cleaningType,
       extras: _extras.join(', '),
     );
@@ -550,5 +531,77 @@ class _BookingScreenState extends State<BookingScreen> {
         ),
       );
     }
+  }
+
+  int _roomCountForService() {
+    final name = widget.service.name.toLowerCase();
+    return name.contains('bedroom') ||
+            name.contains('office') ||
+            name.contains('window') ||
+            name.contains('sofa')
+        ? _quantity
+        : 0;
+  }
+
+  int _bathroomCountForService() {
+    return widget.service.name.toLowerCase().contains('bathroom')
+        ? _quantity
+        : 0;
+  }
+
+  int _kitchenCountForService() {
+    return widget.service.name.toLowerCase().contains('kitchen')
+        ? _quantity
+        : 0;
+  }
+}
+
+class _ScheduleTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+
+  const _ScheduleTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppStyles.paddingMedium),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+          border: Border.all(color: AppColors.lightGray),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style:
+                          TextStyle(fontSize: 12, color: AppColors.darkGray)),
+                  const SizedBox(height: 2),
+                  Text(value,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.gray),
+          ],
+        ),
+      ),
+    );
   }
 }
