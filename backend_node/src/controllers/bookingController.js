@@ -1,4 +1,4 @@
-const { Booking, Service, User, Notification, Review } = require('../models');
+const { Booking, Service, User, Cleaner, Notification, Review } = require('../models');
 const { calculatePrice } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
@@ -14,7 +14,10 @@ const sequelize = require('../config/db');
 exports.createBooking = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { service_id, booking_date, booking_time, address, city, notes } = req.body;
+    const { 
+      service_id, booking_date, booking_time, address, city, notes,
+      is_custom, property_type, room_count, bathrooms_count, kitchens_count, cleaning_type, extras 
+    } = req.body;
 
     // Validate input
     if (!service_id || !booking_date || !booking_time || !address || !city) {
@@ -31,11 +34,30 @@ exports.createBooking = async (req, res) => {
     // Check if booking date is in the future
     const bookingDateTime = new Date(`${booking_date}T${booking_time}`);
     const now = new Date();
+    if (Number.isNaN(bookingDateTime.getTime()) || bookingDateTime <= now) {
+      await t.rollback();
+      return sendError(res, 'Please choose a future date and time', 400);
+    }
 
     const isUrgent = (bookingDateTime - now) / (1000 * 60 * 60) < 24;
 
+    const extrasCount = Array.isArray(extras)
+      ? extras.length
+      : String(extras || '')
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean).length;
+
     // Calculate price
-    const totalPrice = calculatePrice(service.base_price, isUrgent);
+    const totalPrice = calculatePrice(service.base_price, {
+      isUrgent,
+      is_custom,
+      room_count,
+      bathrooms_count,
+      kitchens_count,
+      cleaning_type,
+      extras_count: extrasCount,
+    });
 
     // Create booking
     const booking = await Booking.create(
@@ -49,6 +71,13 @@ exports.createBooking = async (req, res) => {
         notes,
         total_price: totalPrice,
         status: 'pending',
+        is_custom: is_custom || false,
+        property_type,
+        room_count: room_count || 0,
+        bathrooms_count: bathrooms_count || 0,
+        kitchens_count: kitchens_count || 0,
+        cleaning_type: cleaning_type || 'normal',
+        extras: typeof extras === 'object' ? JSON.stringify(extras) : extras,
       },
       { transaction: t }
     );
@@ -84,9 +113,15 @@ exports.getMyBookings = async (req, res) => {
           as: 'service',
         },
         {
-          model: User,
+          model: Cleaner,
           as: 'cleaner',
-          attributes: { exclude: ['password'] },
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: { exclude: ['password'] },
+            },
+          ],
         },
       ],
       order: [['created_at', 'DESC']],
@@ -118,9 +153,15 @@ exports.getBookingById = async (req, res) => {
           attributes: { exclude: ['password'] },
         },
         {
-          model: User,
+          model: Cleaner,
           as: 'cleaner',
-          attributes: { exclude: ['password'] },
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: { exclude: ['password'] },
+            },
+          ],
         },
         {
           model: Review,

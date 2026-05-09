@@ -11,6 +11,13 @@ class Booking {
   final String? notes;
   final double totalPrice;
   final String status; // pending, accepted, on_the_way, started, completed, cancelled
+  final bool isCustom;
+  final String? propertyType;
+  final int roomCount;
+  final int bathroomsCount;
+  final int kitchensCount;
+  final String cleaningType;
+  final String? extras;
   final DateTime? createdAt;
 
   Booking({
@@ -25,6 +32,13 @@ class Booking {
     this.notes,
     required this.totalPrice,
     required this.status,
+    this.isCustom = false,
+    this.propertyType,
+    this.roomCount = 0,
+    this.bathroomsCount = 0,
+    this.kitchensCount = 0,
+    this.cleaningType = 'normal',
+    this.extras,
     this.createdAt,
   });
 
@@ -42,6 +56,13 @@ class Booking {
       notes: json['notes'],
       totalPrice: double.parse(json['total_price'].toString()),
       status: json['status'] ?? 'pending',
+      isCustom: json['is_custom'] == 1 || json['is_custom'] == true,
+      propertyType: json['property_type'],
+      roomCount: json['room_count'] ?? 0,
+      bathroomsCount: json['bathrooms_count'] ?? 0,
+      kitchensCount: json['kitchens_count'] ?? 0,
+      cleaningType: json['cleaning_type'] ?? 'normal',
+      extras: json['extras'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -62,6 +83,13 @@ class Booking {
       'notes': notes,
       'total_price': totalPrice,
       'status': status,
+      'is_custom': isCustom,
+      'property_type': propertyType,
+      'room_count': roomCount,
+      'bathrooms_count': bathroomsCount,
+      'kitchens_count': kitchensCount,
+      'cleaning_type': cleaningType,
+      'extras': extras,
       'created_at': createdAt?.toIso8601String(),
     };
   }

@@ -6,12 +6,14 @@ import '../services/booking_service.dart';
 class BookingProvider extends ChangeNotifier {
   List<Booking> _bookings = [];
   Booking? _selectedBooking;
+  Booking? _lastCreatedBooking;
   bool _isLoading = false;
   String? _error;
 
   // Getters
   List<Booking> get bookings => _bookings;
   Booking? get selectedBooking => _selectedBooking;
+  Booking? get lastCreatedBooking => _lastCreatedBooking;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -23,6 +25,13 @@ class BookingProvider extends ChangeNotifier {
     required String address,
     required String city,
     String? notes,
+    bool isCustom = false,
+    String? propertyType,
+    int roomCount = 0,
+    int bathroomsCount = 0,
+    int kitchensCount = 0,
+    String cleaningType = 'normal',
+    String? extras,
   }) async {
     _isLoading = true;
     _error = null;
@@ -36,9 +45,29 @@ class BookingProvider extends ChangeNotifier {
         address: address,
         city: city,
         notes: notes,
+        isCustom: isCustom,
+        propertyType: propertyType,
+        roomCount: roomCount,
+        bathroomsCount: bathroomsCount,
+        kitchensCount: kitchensCount,
+        cleaningType: cleaningType,
+        extras: extras,
       );
 
       if (result['success']) {
+        final createdBooking = Booking.fromJson(result['data']);
+        _lastCreatedBooking = createdBooking;
+        _selectedBooking = createdBooking;
+
+        final existingIndex =
+            _bookings.indexWhere((booking) => booking.id == createdBooking.id);
+        if (existingIndex == -1) {
+          _bookings = [createdBooking, ..._bookings];
+        } else {
+          _bookings[existingIndex] = createdBooking;
+        }
+
+        await fetchMyBookings();
         _isLoading = false;
         notifyListeners();
         return true;

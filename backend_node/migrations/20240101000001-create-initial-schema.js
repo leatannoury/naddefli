@@ -172,6 +172,34 @@ module.exports = {
         type: Sequelize.ENUM('pending', 'accepted', 'on_the_way', 'started', 'completed', 'cancelled'),
         defaultValue: 'pending',
       },
+      is_custom: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      property_type: {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+      },
+      room_count: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+      },
+      bathrooms_count: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+      },
+      kitchens_count: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+      },
+      cleaning_type: {
+        type: Sequelize.STRING(50),
+        defaultValue: 'normal',
+      },
+      extras: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       created_at: {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW,

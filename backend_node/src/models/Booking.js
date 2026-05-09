@@ -58,6 +58,35 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.ENUM('pending', 'accepted', 'on_the_way', 'started', 'completed', 'cancelled'),
     defaultValue: 'pending',
   },
+  is_custom: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  property_type: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  room_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  bathrooms_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  kitchens_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  cleaning_type: {
+    type: DataTypes.STRING(50),
+    defaultValue: 'normal',
+  },
+  extras: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'JSON string of extra options',
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

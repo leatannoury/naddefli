@@ -11,6 +11,7 @@ process.on('uncaughtException', (error) => {
 
 const express = require('express');
 const cors = require('cors');
+const { DataTypes } = require('sequelize');
 const sequelize = require('./config/db');
 const { initializeAssociations } = require('./models');
 const errorHandler = require('./middleware/errorHandler');
@@ -63,6 +64,27 @@ app.use((req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
+const ensureBookingColumns = async () => {
+  const queryInterface = sequelize.getQueryInterface();
+  const table = await queryInterface.describeTable('bookings');
+
+  const columns = {
+    is_custom: { type: DataTypes.BOOLEAN, defaultValue: false },
+    property_type: { type: DataTypes.STRING(50), allowNull: true },
+    room_count: { type: DataTypes.INTEGER, defaultValue: 0 },
+    bathrooms_count: { type: DataTypes.INTEGER, defaultValue: 0 },
+    kitchens_count: { type: DataTypes.INTEGER, defaultValue: 0 },
+    cleaning_type: { type: DataTypes.STRING(50), defaultValue: 'normal' },
+    extras: { type: DataTypes.TEXT, allowNull: true },
+  };
+
+  for (const [name, definition] of Object.entries(columns)) {
+    if (!table[name]) {
+      await queryInterface.addColumn('bookings', name, definition);
+    }
+  }
+};
+
 // Database connection and server start
 const startServer = async () => {
   try {
@@ -74,6 +96,8 @@ const startServer = async () => {
       console.warn('⚠️ Database connection warning:', dbError.message);
       console.log('ℹ️ Continuing with manually created database schema');
     }
+
+    await ensureBookingColumns();
 
     // Skip sync since we manually created tables
     // await sequelize.sync({ alter: false });

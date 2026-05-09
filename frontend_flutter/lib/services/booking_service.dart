@@ -12,6 +12,13 @@ class BookingService {
     required String address,
     required String city,
     String? notes,
+    bool isCustom = false,
+    String? propertyType,
+    int roomCount = 0,
+    int bathroomsCount = 0,
+    int kitchensCount = 0,
+    String cleaningType = 'normal',
+    String? extras,
   }) async {
     try {
       final response = await HttpService.post(
@@ -23,6 +30,13 @@ class BookingService {
           'address': address,
           'city': city,
           'notes': notes,
+          'is_custom': isCustom,
+          'property_type': propertyType,
+          'room_count': roomCount,
+          'bathrooms_count': bathroomsCount,
+          'kitchens_count': kitchensCount,
+          'cleaning_type': cleaningType,
+          'extras': extras,
         },
       );
 

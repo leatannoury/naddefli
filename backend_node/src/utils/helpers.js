@@ -34,15 +34,40 @@ const generateToken = (user) => {
 /**
  * Calculate dynamic price based on service and conditions
  */
-const calculatePrice = (basePrice, isUrgent = false) => {
-  let finalPrice = basePrice;
+const calculatePrice = (basePrice, options = {}) => {
+  let finalPrice = parseFloat(basePrice);
+  const { 
+    isUrgent = false, 
+    is_custom = false, 
+    room_count = 0, 
+    bathrooms_count = 0, 
+    kitchens_count = 0,
+    cleaning_type = 'normal',
+    extras_count = 0
+  } = options;
+
+  if (is_custom) {
+    // Basic rooms (living/bed) are $20 each
+    finalPrice += (room_count * 20);
+    // Bathrooms are $30 each
+    finalPrice += (bathrooms_count * 30);
+    // Kitchens are $40 each
+    finalPrice += (kitchens_count * 40);
+  }
+
+  // Deep cleaning adds 50% to the total
+  if (cleaning_type === 'deep') {
+    finalPrice = finalPrice * 1.5;
+  }
+
+  finalPrice += (extras_count * 15);
 
   // Add 20% surcharge for urgent same-day bookings
   if (isUrgent) {
     finalPrice = finalPrice * 1.2;
   }
 
-  return finalPrice;
+  return Math.round(finalPrice * 100) / 100; // Round to 2 decimal places
 };
 
 module.exports = {
