@@ -49,26 +49,40 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightGray,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: AppColors.primary),
+          onPressed: () {},
+        ),
         title: const Text(
           'Naddefli',
           style: TextStyle(
-            color: AppColors.black,
+            color: AppColors.primary,
             fontWeight: FontWeight.bold,
+            fontSize: 28,
           ),
         ),
+        centerTitle: false,
         actions: [
           IconButton(
-            icon:
-                const Icon(Icons.notifications_none, color: AppColors.primary),
+            icon: const Icon(Icons.notifications, color: AppColors.primary),
             onPressed: () {},
           ),
         ],
       ),
       body: _buildBody(),
+      floatingActionButton: _selectedTabIndex == 0
+          ? FloatingActionButton(
+              backgroundColor: AppColors.primaryContainer,
+              foregroundColor: AppColors.onPrimaryContainer,
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/custom-booking'),
+              child: const Icon(Icons.add, size: 28),
+            )
+          : null,
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -88,194 +102,270 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeTab() {
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(AppStyles.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome card
-            Consumer<AuthProvider>(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Hero Welcome Section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppStyles.marginMobile,
+              AppStyles.paddingXLarge,
+              AppStyles.marginMobile,
+              AppStyles.paddingLarge,
+            ),
+            child: Consumer<AuthProvider>(
               builder: (context, authProvider, _) {
-                return Container(
-                  padding: const EdgeInsets.all(AppStyles.paddingLarge),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.secondary],
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hello, ${authProvider.user?.fullName.split(' ').first ?? 'User'}',
+                      style: AppStyles.bodyLarge.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome, ${authProvider.user?.fullName ?? 'User'}!',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Find trusted cleaners near you',
-                        style: TextStyle(
-                          color: AppColors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                    const SizedBox(height: AppStyles.paddingSmall),
+                    const Text(
+                      'Experience The Refresh',
+                      style: AppStyles.headlineMedium,
+                    ),
+                  ],
                 );
               },
             ),
-            const SizedBox(height: 24),
-            // Search bar
-            TextField(
-              controller: _searchController,
-              onChanged: (value) => setState(() => _serviceQuery = value),
-              decoration: InputDecoration(
-                hintText: 'Search services',
-                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-                suffixIcon: _serviceQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _serviceQuery = '');
-                        },
-                      ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-                  borderSide: BorderSide.none,
+          ),
+
+          // Premium Service Card - Whole Home Cleaning
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppStyles.marginMobile,
+            ),
+            child: GestureDetector(
+              onTap: () =>
+                  Navigator.of(context).pushNamed('/custom-booking'),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withValues(alpha: 0.05),
+                      blurRadius: 20,
+                    ),
+                  ],
                 ),
-                filled: true,
-                fillColor: AppColors.white,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.all(AppStyles.paddingLarge),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppStyles.paddingBase,
+                        vertical: AppStyles.paddingSmall,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Text(
+                        'PREMIUM SERVICE',
+                        style: AppStyles.labelBold.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppStyles.paddingBase),
+                    const Text(
+                      'Whole Home Cleaning',
+                      style: AppStyles.headlineSmall,
+                    ),
+                    const SizedBox(height: AppStyles.paddingSmall),
+                    Text(
+                      'A comprehensive, top-to-bottom refresh for your entire residence.',
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppStyles.paddingBase),
+                    ElevatedButton(
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed('/custom-booking'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppStyles.paddingLarge,
+                          vertical: AppStyles.paddingBase,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Book Custom Request'),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            // Custom Request Section
-            Container(
-              padding: const EdgeInsets.all(AppStyles.paddingMedium),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-                border:
-                    Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
+          ),
+
+          // Specialized Services Section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppStyles.marginMobile,
+              AppStyles.paddingXLarge,
+              AppStyles.marginMobile,
+              AppStyles.paddingBase,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Specialized Services',
+                  style: AppStyles.headlineSmall,
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: Text(
+                    'View all',
+                    style: AppStyles.labelBold.copyWith(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child:
-                        const Icon(Icons.auto_awesome, color: AppColors.white),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Custom Cleaning',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          'Select rooms, depth, and extras',
-                          style: TextStyle(
-                            color: AppColors.darkGray,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () =>
-                        Navigator.of(context).pushNamed('/custom-booking'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.white,
-                    ),
-                    child: const Text('Request'),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            // Services heading
-            const Text(
-              'Popular Services',
-              style: AppStyles.headingSmall,
+          ),
+
+          // Services Grid
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppStyles.marginMobile,
             ),
-            const SizedBox(height: 16),
-            // Services list
-            Consumer<ServiceProvider>(
+            child: Consumer<ServiceProvider>(
               builder: (context, serviceProvider, _) {
                 if (serviceProvider.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
+                  return const SizedBox(
+                    height: 300,
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
                   );
                 }
 
                 if (serviceProvider.services.isEmpty) {
-                  return const Center(
-                    child: Text('No services available'),
-                  );
-                }
-
-                final query = _serviceQuery.trim().toLowerCase();
-                final services = query.isEmpty
-                    ? serviceProvider.services
-                    : serviceProvider.services.where((service) {
-                        return service.name.toLowerCase().contains(query) ||
-                            (service.description ?? '')
-                                .toLowerCase()
-                                .contains(query);
-                      }).toList();
-
-                if (services.isEmpty) {
-                  return Container(
-                    width: double.infinity,
+                  return Padding(
                     padding: const EdgeInsets.all(AppStyles.paddingLarge),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius:
-                          BorderRadius.circular(AppStyles.radiusMedium),
+                    child: Text(
+                      'No services available',
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
-                    child: const Text('No services match your search.'),
                   );
                 }
 
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount:
-                        MediaQuery.of(context).size.width < 360 ? 1 : 2,
-                    childAspectRatio:
-                        MediaQuery.of(context).size.width < 360 ? 1.55 : 0.68,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 1,
+                    childAspectRatio: 1.2,
+                    mainAxisSpacing: AppStyles.paddingBase,
                   ),
-                  itemCount: services.length,
+                  itemCount: serviceProvider.services.length,
                   itemBuilder: (context, index) {
-                    final service = services[index];
+                    final service = serviceProvider.services[index];
                     return _buildServiceCard(context, service);
                   },
                 );
               },
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: AppStyles.paddingXLarge),
+
+          // Social Proof Section
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppStyles.marginMobile,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+              ),
+              padding: const EdgeInsets.all(AppStyles.paddingLarge),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: AppStyles.paddingSmall + 8,
+                        height: AppStyles.paddingSmall + 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHighest,
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      const SizedBox(width: -6),
+                      Container(
+                        width: AppStyles.paddingSmall + 8,
+                        height: AppStyles.paddingSmall + 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      const SizedBox(width: -6),
+                      Container(
+                        width: AppStyles.paddingSmall + 8,
+                        height: AppStyles.paddingSmall + 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainer,
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppStyles.paddingBase),
+                  const Text(
+                    'Trusted by 2,000+ local homes',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.onPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppStyles.paddingSmall),
+                  Text(
+                    'Our cleaning experts are background checked and highly rated.',
+                    textAlign: TextAlign.center,
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.onPrimary.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: AppStyles.paddingXLarge),
+        ],
       ),
     );
   }
@@ -288,72 +378,92 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppStyles.radiusXL),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
+              color: AppColors.black.withOpacity(0.05),
+              blurRadius: 20,
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 88,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppStyles.radiusLarge),
-                  topRight: Radius.circular(AppStyles.radiusLarge),
+            Stack(
+              children: [
+                Container(
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(AppStyles.radiusXL),
+                      topRight: Radius.circular(AppStyles.radiusXL),
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.cleaning_services,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.cleaning_services,
-                  size: 40,
-                  color: AppColors.primary,
+                Positioned(
+                  top: AppStyles.paddingSmall,
+                  right: AppStyles.paddingSmall,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppStyles.paddingBase,
+                      vertical: AppStyles.paddingSmall,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '\$${service.basePrice.toStringAsFixed(0)}+',
+                      style: AppStyles.labelBold.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppStyles.paddingBase),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    service.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.timer_outlined,
-                          size: 12, color: AppColors.darkGray),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${service.durationHours.toStringAsFixed(1)}h',
-                        style: const TextStyle(
-                          color: AppColors.darkGray,
-                          fontSize: 12,
+                      const Icon(
+                        Icons.restaurant,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: AppStyles.paddingSmall),
+                      Expanded(
+                        child: Text(
+                          service.name,
+                          style: AppStyles.labelBold.copyWith(
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppStyles.paddingSmall),
                   Text(
-                    '\$${service.basePrice.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColors.primary,
+                    service.description ?? 'Professional cleaning service',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -771,7 +881,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Edit Profile', style: AppStyles.headingSmall),
+              const Text('Edit Profile', style: AppStyles.headlineSmall),
               const SizedBox(height: 16),
               TextField(
                 controller: nameController,
@@ -855,7 +965,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Icon(icon, color: AppColors.primary, size: 40),
               const SizedBox(height: 12),
-              Text(title, style: AppStyles.headingSmall),
+              Text(title, style: AppStyles.headlineSmall),
               const SizedBox(height: 8),
               Text(
                 message,
@@ -878,29 +988,74 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _selectedTabIndex,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: AppColors.gray,
-      onTap: (index) {
-        setState(() {
-          _selectedTabIndex = index;
-        });
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppStyles.paddingBase,
+            AppStyles.paddingSmall,
+            AppStyles.paddingBase,
+            AppStyles.paddingBase,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildBottomNavItem(0, Icons.home, 'Home'),
+              _buildBottomNavItem(1, Icons.calendar_month, 'Bookings'),
+              _buildBottomNavItem(2, Icons.person, 'Profile'),
+            ],
+          ),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_today),
-          label: 'Bookings',
+      ),
+    );
+  }
+
+  Widget _buildBottomNavItem(int index, IconData icon, String label) {
+    final isActive = _selectedTabIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTabIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppStyles.paddingLarge,
+          vertical: AppStyles.paddingSmall,
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppColors.secondaryContainer
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
         ),
-      ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isActive
+                  ? AppColors.onSecondaryContainer
+                  : AppColors.onSurfaceVariant,
+            ),
+            const SizedBox(height: AppStyles.paddingXSmall),
+            Text(
+              label,
+              style: AppStyles.labelBold.copyWith(
+                color: isActive
+                    ? AppColors.onSecondaryContainer
+                    : AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

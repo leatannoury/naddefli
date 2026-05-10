@@ -66,6 +66,14 @@ app.use(errorHandler);
 
 const ensureBookingColumns = async () => {
   const queryInterface = sequelize.getQueryInterface();
+  
+  // Check if bookings table exists
+  const tables = await queryInterface.showAllTables();
+  if (!tables.includes('bookings')) {
+    console.log('ℹ️ Bookings table does not exist, skipping column check');
+    return;
+  }
+
   const table = await queryInterface.describeTable('bookings');
 
   const columns = {
@@ -81,6 +89,7 @@ const ensureBookingColumns = async () => {
   for (const [name, definition] of Object.entries(columns)) {
     if (!table[name]) {
       await queryInterface.addColumn('bookings', name, definition);
+      console.log(`✅ Added missing column ${name} to bookings table`);
     }
   }
 };

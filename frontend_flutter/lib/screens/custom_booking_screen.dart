@@ -63,6 +63,13 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
       if (value) total += 15.0; // Each extra is $15
     });
 
+    // Check for urgency surcharge (20% if less than 24 hours away)
+    final now = DateTime.now();
+    final difference = _selectedDate.difference(now).inHours;
+    if (difference < 24) {
+      total *= 1.2;
+    }
+
     return total;
   }
 
@@ -386,7 +393,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Choose Time', style: AppStyles.headingSmall),
+              const Text('Choose Time', style: AppStyles.headlineSmall),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 10,

@@ -48,7 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Create Account', style: AppStyles.headingMedium),
+              const Text('Create Account', style: AppStyles.headlineMedium),
               const SizedBox(height: 8),
               Text(
                 'Join Naddefli today',

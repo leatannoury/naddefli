@@ -51,11 +51,25 @@ class _BookingScreenState extends State<BookingScreen> {
   ];
 
   double _calculateTotal() {
+    // Base calculation: service price * quantity
     var total = widget.service.basePrice * _quantity;
-    total += _extras.length * 15;
+    
+    // Deep cleaning adds 50% to the base service
     if (_cleaningType == 'deep') {
       total *= 1.5;
     }
+    
+    // Add extras (each extra is $15)
+    total += _extras.length * 15;
+    
+    // Check for urgency surcharge (20% if less than 24 hours away)
+    final now = DateTime.now();
+    final difference = _selectedDate.difference(now).inHours;
+    // We also need to consider the time of day, but for simplicity:
+    if (difference < 24) {
+      total *= 1.2;
+    }
+    
     return total;
   }
 
@@ -110,7 +124,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         children: [
                           Text(
                             widget.service.name,
-                            style: AppStyles.headingSmall,
+                            style: AppStyles.headlineSmall,
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -127,12 +141,12 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text('Schedule', style: AppStyles.headingSmall),
+              const Text('Schedule', style: AppStyles.headlineSmall),
               const SizedBox(height: 12),
               _buildSchedulePicker(),
               const SizedBox(height: 24),
               Text('${widget.service.name} Details',
-                  style: AppStyles.headingSmall),
+                  style: AppStyles.headlineSmall),
               const SizedBox(height: 12),
               _buildServiceDetails(),
               const SizedBox(height: 20),
@@ -429,7 +443,7 @@ class _BookingScreenState extends State<BookingScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Choose Time', style: AppStyles.headingSmall),
+              const Text('Choose Time', style: AppStyles.headlineSmall),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 10,

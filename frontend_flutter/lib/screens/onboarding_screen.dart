@@ -154,7 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const SizedBox(height: 24),
         Text(
           title,
-          style: AppStyles.headingMedium,
+          style: AppStyles.headlineMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),

@@ -55,13 +55,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
                       const Text(
                         'Naddefli',
-                        style: AppStyles.headingLarge,
+                        style: AppStyles.displayLarge,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 40),
-                const Text('Welcome Back', style: AppStyles.headingMedium),
+                const Text('Welcome Back', style: AppStyles.headlineMedium),
                 const SizedBox(height: 8),
                 Text(
                   'Login to your account',
