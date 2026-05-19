@@ -21,7 +21,10 @@ class AuthProvider extends ChangeNotifier {
   Future<void> initializeAuth() async {
     _token = StorageService.getToken();
     if (_token != null) {
-      await getProfile();
+      final profileLoaded = await getProfile();
+      if (!profileLoaded) {
+        await logout();
+      }
     }
     notifyListeners();
   }
@@ -105,16 +108,28 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Get user profile
-  Future<void> getProfile() async {
+  Future<bool> getProfile() async {
     try {
       final result = await AuthService.getProfile();
       if (result['success']) {
         _user = User.fromJson(result['data']);
         notifyListeners();
+        return true;
       }
+
+      final message = result['message']?.toString().toLowerCase() ?? '';
+      if (result['statusCode'] == 401 ||
+          message.contains('invalid') ||
+          message.contains('expired')) {
+        await logout();
+      }
+      _error = result['message'];
+      notifyListeners();
+      return false;
     } catch (e) {
       _error = e.toString();
       notifyListeners();
+      return false;
     }
   }
 

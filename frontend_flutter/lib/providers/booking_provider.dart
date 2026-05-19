@@ -22,6 +22,9 @@ class BookingProvider extends ChangeNotifier {
     required String serviceId,
     required String bookingDate,
     required String bookingTime,
+    required String startTime,
+    required String endTime,
+    required double durationHours,
     required String address,
     required String city,
     String? notes,
@@ -32,6 +35,11 @@ class BookingProvider extends ChangeNotifier {
     int kitchensCount = 0,
     String cleaningType = 'normal',
     String? extras,
+    double discountAmount = 0.0,
+    String? promoCode,
+    bool redeemLoyalty = false,
+    bool saveAddress = false,
+    String? addressLabel,
   }) async {
     _isLoading = true;
     _error = null;
@@ -42,6 +50,9 @@ class BookingProvider extends ChangeNotifier {
         serviceId: serviceId,
         bookingDate: bookingDate,
         bookingTime: bookingTime,
+        startTime: startTime,
+        endTime: endTime,
+        durationHours: durationHours,
         address: address,
         city: city,
         notes: notes,
@@ -52,6 +63,11 @@ class BookingProvider extends ChangeNotifier {
         kitchensCount: kitchensCount,
         cleaningType: cleaningType,
         extras: extras,
+        discountAmount: discountAmount,
+        promoCode: promoCode,
+        redeemLoyalty: redeemLoyalty,
+        saveAddress: saveAddress,
+        addressLabel: addressLabel,
       );
 
       if (result['success']) {
@@ -146,10 +162,13 @@ class BookingProvider extends ChangeNotifier {
       final result = await BookingService.cancelBooking(id);
 
       if (result['success']) {
-        // Update booking in list
+        final updatedBooking = Booking.fromJson(result['data']);
         final index = _bookings.indexWhere((b) => b.id == id);
         if (index != -1) {
-          _bookings[index] = Booking.fromJson(result['data']);
+          _bookings[index] = updatedBooking;
+        }
+        if (_selectedBooking?.id == id) {
+          _selectedBooking = updatedBooking;
         }
         _isLoading = false;
         notifyListeners();
@@ -165,6 +184,70 @@ class BookingProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Complete booking
+  Future<bool> completeBooking(String id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await BookingService.completeBooking(id);
+
+      if (result['success']) {
+        final updatedBooking = Booking.fromJson(result['data']);
+        final index = _bookings.indexWhere((b) => b.id == id);
+        if (index != -1) {
+          _bookings[index] = updatedBooking;
+        }
+        if (_selectedBooking?.id == id) {
+          _selectedBooking = updatedBooking;
+        }
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = result['message'];
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Validate promo code
+  Future<Map<String, dynamic>> validatePromoCode({
+    required String code,
+    required String cleaningType,
+    required String extras,
+    required double subtotal,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await BookingService.validatePromo(
+        code: code,
+        cleaningType: cleaningType,
+        extras: extras,
+        subtotal: subtotal,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return result;
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+      return {'success': false, 'message': e.toString()};
     }
   }
 

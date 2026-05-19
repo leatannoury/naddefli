@@ -6,7 +6,6 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
-  // Optionally: process.exit(1);
 });
 
 const express = require('express');
@@ -24,6 +23,8 @@ const cleanerRoutes = require('./routes/cleanerRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const addressRoutes = require('./routes/addressRoutes');
+const promoRoutes = require('./routes/promoRoutes');
 
 const app = express();
 
@@ -43,6 +44,8 @@ app.use('/api/cleaner', cleanerRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/promo', promoRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -66,17 +69,42 @@ app.use(errorHandler);
 
 const ensureBookingColumns = async () => {
   const queryInterface = sequelize.getQueryInterface();
-  
-  // Check if bookings table exists
   const tables = await queryInterface.showAllTables();
-  if (!tables.includes('bookings')) {
-    console.log('ℹ️ Bookings table does not exist, skipping column check');
-    return;
+
+  // 1. Ensure Addresses Table exists
+  if (!tables.includes('addresses')) {
+    await sequelize.models.Address.sync();
+    console.log('✅ Created addresses table');
   }
 
-  const table = await queryInterface.describeTable('bookings');
+  // 2. Ensure Promo Codes Table exists
+  if (!tables.includes('promo_codes')) {
+    await sequelize.models.PromoCode.sync();
+    console.log('✅ Created promo_codes table');
+  }
 
-  const columns = {
+  // 3. Check and add columns to users table
+  const usersTable = await queryInterface.describeTable('users');
+  if (!usersTable.loyalty_points) {
+    await queryInterface.addColumn('users', 'loyalty_points', {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    });
+    console.log('✅ Added loyalty_points column to users table');
+  }
+  if (!usersTable.completed_bookings_count) {
+    await queryInterface.addColumn('users', 'completed_bookings_count', {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    });
+    console.log('✅ Added completed_bookings_count column to users table');
+  }
+
+  // 4. Check and add columns to bookings table
+  const bookingsTable = await queryInterface.describeTable('bookings');
+  const bookingColumns = {
     is_custom: { type: DataTypes.BOOLEAN, defaultValue: false },
     property_type: { type: DataTypes.STRING(50), allowNull: true },
     room_count: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -84,20 +112,54 @@ const ensureBookingColumns = async () => {
     kitchens_count: { type: DataTypes.INTEGER, defaultValue: 0 },
     cleaning_type: { type: DataTypes.STRING(50), defaultValue: 'normal' },
     extras: { type: DataTypes.TEXT, allowNull: true },
+    start_time: { type: DataTypes.STRING(5), allowNull: true },
+    end_time: { type: DataTypes.STRING(5), allowNull: true },
+    duration_hours: { type: DataTypes.DECIMAL(5, 2), defaultValue: 1.0 },
+    discount_amount: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.0 },
+    promo_code: { type: DataTypes.STRING(50), allowNull: true },
   };
 
-  for (const [name, definition] of Object.entries(columns)) {
-    if (!table[name]) {
+  for (const [name, definition] of Object.entries(bookingColumns)) {
+    if (!bookingsTable[name]) {
       await queryInterface.addColumn('bookings', name, definition);
       console.log(`✅ Added missing column ${name} to bookings table`);
     }
+  }
+
+  // 5. Seed promo codes if they are missing
+  const PromoCode = sequelize.models.PromoCode;
+  const count = await PromoCode.count();
+  if (count === 0) {
+    await PromoCode.bulkCreate([
+      {
+        code: 'DEEP20',
+        type: 'percentage',
+        value: 20.0,
+        conditions: JSON.stringify({ cleaning_type: 'deep' }),
+        expires_at: new Date('2030-12-31'),
+      },
+      {
+        code: 'FIRST10',
+        type: 'percentage',
+        value: 10.0,
+        conditions: JSON.stringify({ first_booking: true }),
+        expires_at: new Date('2030-12-31'),
+      },
+      {
+        code: 'WINDOWFREE',
+        type: 'free_addon',
+        value: 10.0,
+        conditions: JSON.stringify({ free_addon: 'Windows Cleaning' }),
+        expires_at: new Date('2030-12-31'),
+      },
+    ]);
+    console.log('✅ Seeded default promo codes (DEEP20, FIRST10, WINDOWFREE)');
   }
 };
 
 // Database connection and server start
 const startServer = async () => {
   try {
-    // Try to authenticate database, but continue anyway
     try {
       await sequelize.authenticate();
       console.log('✅ Database connection established successfully');
@@ -108,11 +170,8 @@ const startServer = async () => {
 
     await ensureBookingColumns();
 
-    // Skip sync since we manually created tables
-    // await sequelize.sync({ alter: false });
     console.log('✅ Database ready');
 
-    // Start server
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
@@ -120,6 +179,8 @@ const startServer = async () => {
       console.log(`   - Auth: POST /api/auth/register, POST /api/auth/login`);
       console.log(`   - Services: GET /api/services`);
       console.log(`   - Bookings: POST /api/bookings/create, GET /api/bookings/my-bookings`);
+      console.log(`   - Addresses: GET /api/addresses, POST /api/addresses`);
+      console.log(`   - Promos: POST /api/promo/validate`);
       console.log(`   - Health: GET /api/health`);
     });
   } catch (error) {

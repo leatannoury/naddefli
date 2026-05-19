@@ -6,12 +6,16 @@ class Booking {
   final String serviceId;
   final DateTime bookingDate;
   final String bookingTime;
+  final String startTime;
+  final String endTime;
+  final double durationHours;
+  final double discountAmount;
+  final String? promoCode;
   final String address;
   final String city;
   final String? notes;
   final double totalPrice;
-  final String
-      status; // pending, accepted, on_the_way, started, completed, cancelled
+  final String status; // pending, accepted, on_the_way, started, completed, cancelled
   final bool isCustom;
   final String? propertyType;
   final int roomCount;
@@ -28,6 +32,11 @@ class Booking {
     required this.serviceId,
     required this.bookingDate,
     required this.bookingTime,
+    required this.startTime,
+    required this.endTime,
+    required this.durationHours,
+    required this.discountAmount,
+    this.promoCode,
     required this.address,
     required this.city,
     this.notes,
@@ -47,6 +56,8 @@ class Booking {
   factory Booking.fromJson(Map<String, dynamic> json) {
     final dateValue = json['booking_date']?.toString();
     final totalValue = double.tryParse(json['total_price']?.toString() ?? '');
+    final durationValue = double.tryParse(json['duration_hours']?.toString() ?? '');
+    final discountValue = double.tryParse(json['discount_amount']?.toString() ?? '');
 
     return Booking(
       id: json['id'] ?? '',
@@ -57,6 +68,11 @@ class Booking {
           ? DateTime.now()
           : (DateTime.tryParse(dateValue) ?? DateTime.now()),
       bookingTime: json['booking_time'] ?? '',
+      startTime: json['start_time'] ?? json['booking_time'] ?? '',
+      endTime: json['end_time'] ?? '',
+      durationHours: durationValue ?? 1.0,
+      discountAmount: discountValue ?? 0.0,
+      promoCode: json['promo_code'],
       address: json['address'] ?? '',
       city: json['city'] ?? '',
       notes: json['notes'],
@@ -88,6 +104,11 @@ class Booking {
       'service_id': serviceId,
       'booking_date': bookingDate.toIso8601String(),
       'booking_time': bookingTime,
+      'start_time': startTime,
+      'end_time': endTime,
+      'duration_hours': durationHours,
+      'discount_amount': discountAmount,
+      'promo_code': promoCode,
       'address': address,
       'city': city,
       'notes': notes,

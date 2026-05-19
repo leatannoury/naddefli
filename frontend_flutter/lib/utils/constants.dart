@@ -35,4 +35,15 @@ class ApiEndpoints {
   static const String createReview = '$BASE_URL/reviews/create';
   static String cleanerReviews(String cleanerId) =>
       '$BASE_URL/reviews/cleaner/$cleanerId';
+
+  // Addresses
+  static const String addresses = '$BASE_URL/addresses';
+  static String deleteAddress(String id) => '$BASE_URL/addresses/$id';
+  static String updateAddress(String id) => '$BASE_URL/addresses/$id';
+
+  // Promo Code Validation
+  static const String validatePromo = '$BASE_URL/promo/validate';
+
+  // Complete Booking
+  static String completeBooking(String id) => '$BASE_URL/bookings/complete/$id';
 }

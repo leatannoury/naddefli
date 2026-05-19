@@ -36,6 +36,16 @@ const User = sequelize.define('User', {
     defaultValue: 'customer',
     comment: 'User role - customer, cleaner, or admin',
   },
+  loyalty_points: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false,
+  },
+  completed_bookings_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false,
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

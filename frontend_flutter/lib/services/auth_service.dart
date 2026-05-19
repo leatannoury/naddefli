@@ -92,10 +92,15 @@ class AuthService {
       }
       return {
         'success': false,
+        'statusCode': response.statusCode,
         'message': response.data['message'] ?? 'Failed to fetch profile'
       };
     } on DioException catch (e) {
-      return {'success': false, 'message': e.message ?? 'Network error'};
+      return {
+        'success': false,
+        'message': e.response?.data['message'] ?? e.message ?? 'Network error',
+        'statusCode': e.response?.statusCode,
+      };
     }
   }
 

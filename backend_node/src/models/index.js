@@ -4,6 +4,8 @@ const Service = require('./Service');
 const Booking = require('./Booking');
 const Review = require('./Review');
 const Notification = require('./Notification');
+const Address = require('./Address');
+const PromoCode = require('./PromoCode');
 
 /**
  * Define model associations
@@ -12,6 +14,10 @@ const initializeAssociations = () => {
   // User to Cleaner (one-to-one)
   User.hasOne(Cleaner, { foreignKey: 'user_id', as: 'cleanerProfile' });
   Cleaner.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+  // User to Address (one-to-many)
+  User.hasMany(Address, { foreignKey: 'user_id', as: 'addresses' });
+  Address.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
   // User to Booking (one-to-many)
   User.hasMany(Booking, { foreignKey: 'user_id', as: 'bookings' });
@@ -49,5 +55,7 @@ module.exports = {
   Booking,
   Review,
   Notification,
+  Address,
+  PromoCode,
   initializeAssociations,
 };

@@ -11,7 +11,8 @@ class BookingConfirmationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedExtras = (booking.extras ?? '')
+    final extrasString = booking.extras?.toString() ?? '';
+    final List<String> selectedExtras = extrasString
         .split(',')
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)

@@ -18,8 +18,48 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
   int _bookingTabIndex = 0;
+  int _heroPageIndex = 0;
+  final PageController _heroPageController = PageController(viewportFraction: 0.92);
   final TextEditingController _searchController = TextEditingController();
-  String _serviceQuery = '';
+
+  final List<Map<String, String>> _heroCards = [
+    {
+      'title': 'A Cleaner Home, A Better Life',
+      'subtitle': 'Professional cleaning services at your fingertips',
+      'button': 'Book Now',
+    },
+    {
+      'title': 'Book Your Cleaning Now',
+      'subtitle': 'Customize your cleaning and get an instant price estimate',
+      'button': 'Get Started',
+    },
+    {
+      'title': 'Professional Cleaners You Can Trust',
+      'subtitle': 'Background-checked experts with 5-star ratings',
+      'button': 'Explore Services',
+    },
+  ];
+
+  final List<Map<String, String>> _offerCards = [
+    {
+      'title': '20% OFF Deep Cleaning',
+      'subtitle': 'Save on premium deep cleaning plans.',
+      'tag': 'Hot',
+      'code': 'DEEP20',
+    },
+    {
+      'title': 'First Booking Discount',
+      'subtitle': 'Enjoy a welcome promo on your first order.',
+      'tag': 'New',
+      'code': 'FIRST10',
+    },
+    {
+      'title': 'Free Window Add-on',
+      'subtitle': 'Add windows cleaning to any service.',
+      'tag': 'Free',
+      'code': 'WINDOWFREE',
+    },
+  ];
 
   @override
   void initState() {
@@ -40,8 +80,31 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<BookingProvider>().fetchMyBookings();
   }
 
+  bool _isUpcomingBooking(dynamic booking, DateTime now) {
+    try {
+      final bookingStatus = booking.status ?? '';
+      if (bookingStatus == 'cancelled' || bookingStatus == 'completed') {
+        return false;
+      }
+      if (bookingStatus == 'pending' ||
+          bookingStatus == 'accepted' ||
+          bookingStatus == 'on_the_way' ||
+          bookingStatus == 'started') {
+        return true;
+      }
+      final dateStr =
+          '${booking.bookingDate.toIso8601String().split('T').first}T${booking.bookingTime}';
+      final dateTime = DateTime.tryParse(dateStr);
+      return dateTime != null && dateTime.isAfter(now);
+    } catch (e) {
+      return false;
+    }
+  }
+
+
   @override
   void dispose() {
+    _heroPageController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -53,10 +116,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: AppColors.primary),
-          onPressed: () {},
-        ),
         title: const Text(
           'Naddefli',
           style: TextStyle(
@@ -105,132 +164,30 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Hero Welcome Section
+          const SizedBox(height: AppStyles.paddingLarge),
+          _buildHeroSection(),
+          const SizedBox(height: AppStyles.paddingLarge),
+          _buildQuickBookingCard(),
+          const SizedBox(height: AppStyles.paddingLarge),
+          _buildLoyaltyStreakCard(),
+          const SizedBox(height: AppStyles.paddingLarge),
+          _buildOffersSection(),
+          const SizedBox(height: AppStyles.paddingXLarge),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppStyles.marginMobile,
-              AppStyles.paddingXLarge,
+              0,
               AppStyles.marginMobile,
-              AppStyles.paddingLarge,
+              AppStyles.paddingSmall,
             ),
-            child: Consumer<AuthProvider>(
-              builder: (context, authProvider, _) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hello, ${authProvider.user?.fullName.split(' ').first ?? 'User'}',
-                      style: AppStyles.bodyLarge.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppStyles.paddingSmall),
-                    const Text(
-                      'Experience The Refresh',
-                      style: AppStyles.headlineMedium,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-
-          // Premium Service Card - Whole Home Cleaning
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppStyles.marginMobile,
-            ),
-            child: GestureDetector(
-              onTap: () =>
-                  Navigator.of(context).pushNamed('/custom-booking'),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(AppStyles.radiusXL),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
-                      blurRadius: 20,
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(AppStyles.paddingLarge),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppStyles.paddingBase,
-                        vertical: AppStyles.paddingSmall,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Text(
-                        'PREMIUM SERVICE',
-                        style: AppStyles.labelBold.copyWith(
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppStyles.paddingBase),
-                    const Text(
-                      'Whole Home Cleaning',
-                      style: AppStyles.headlineSmall,
-                    ),
-                    const SizedBox(height: AppStyles.paddingSmall),
-                    Text(
-                      'A comprehensive, top-to-bottom refresh for your entire residence.',
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppStyles.paddingBase),
-                    ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed('/custom-booking'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.onPrimary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppStyles.paddingLarge,
-                          vertical: AppStyles.paddingBase,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Book Custom Request'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Specialized Services Section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppStyles.marginMobile,
-              AppStyles.paddingXLarge,
-              AppStyles.marginMobile,
-              AppStyles.paddingBase,
-            ),
-            child: Row(
+             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Specialized Services',
-                  style: AppStyles.headlineSmall,
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    'View all',
-                    style: AppStyles.labelBold.copyWith(
-                      color: AppColors.primary,
-                    ),
+                Text(
+                  'Our Services',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -269,9 +226,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    childAspectRatio: 1.2,
-                    mainAxisSpacing: AppStyles.paddingBase,
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
                   ),
                   itemCount: serviceProvider.services.length,
                   itemBuilder: (context, index) {
@@ -313,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(100),
                         ),
                       ),
-                      const SizedBox(width: -6),
+                      const SizedBox(width: 6),
                       Container(
                         width: AppStyles.paddingSmall + 8,
                         height: AppStyles.paddingSmall + 8,
@@ -326,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(100),
                         ),
                       ),
-                      const SizedBox(width: -6),
+                      const SizedBox(width: 6),
                       Container(
                         width: AppStyles.paddingSmall + 8,
                         height: AppStyles.paddingSmall + 8,
@@ -370,6 +328,503 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildHeroSection() {
+    return Column(
+      children: [
+        SizedBox(
+          height: 220,
+          child: PageView.builder(
+            controller: _heroPageController,
+            itemCount: _heroCards.length,
+            onPageChanged: (index) => setState(() => _heroPageIndex = index),
+            itemBuilder: (context, index) {
+              final card = _heroCards[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary,
+                        AppColors.secondary.withValues(alpha: 0.9),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withValues(alpha: 0.08),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(AppStyles.paddingLarge),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          card['title']!,
+                          style: const TextStyle(
+                            color: AppColors.onPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Flexible(
+                        child: Text(
+                          card['subtitle']!,
+                          style: TextStyle(
+                            color: AppColors.onPrimary.withValues(alpha: 0.9),
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (card['button'] == 'Book Now') {
+                              Navigator.of(context)
+                                  .pushNamed('/custom-booking');
+                            } else {
+                              Navigator.of(context)
+                                  .pushReplacementNamed('/home');
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.surface,
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            card['button']!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: AppStyles.paddingSmall),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _heroCards.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: _heroPageIndex == index ? 20 : 10,
+              height: 6,
+              decoration: BoxDecoration(
+                color: _heroPageIndex == index
+                    ? AppColors.primary
+                    : AppColors.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickBookingCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withValues(alpha: 0.05),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(AppStyles.paddingMedium),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Book Your Cleaning Now',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Customize and get instant pricing',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.onSurfaceVariant,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pushNamed('/custom-booking'),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: AppColors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOffersSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppStyles.marginMobile,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Hot Offers',
+            style: AppStyles.headlineSmall,
+          ),
+          const SizedBox(height: AppStyles.paddingSmall),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(
+                _offerCards.length,
+                (index) {
+                  final offer = _offerCards[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _buildOfferCard(offer),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoyaltyStreakCard() {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final points = auth.user?.loyaltyPoints ?? 0;
+        final streakProgress = points % 5;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(color: Color(0x240D9488), blurRadius: 12, offset: Offset(0, 4))
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.stars, color: Colors.amber, size: 24),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Loyalty Milestones',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Total: $points pts',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(5, (index) {
+                    final isCompleted = index < streakProgress;
+                    final isGift = index == 4;
+
+                    return Column(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isCompleted 
+                                ? Colors.amber 
+                                : Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isCompleted ? Colors.amber : Colors.white38,
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: isGift
+                                ? Icon(
+                                    Icons.card_giftcard,
+                                    color: isCompleted ? Colors.white : Colors.white70,
+                                    size: 20,
+                                  )
+                                : (isCompleted
+                                    ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                    : Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      )),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          isGift ? 'Reward' : 'Clean ${index + 1}',
+                          style: TextStyle(
+                            color: isCompleted ? Colors.amber : Colors.white70,
+                            fontSize: 10,
+                            fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  points >= 5 
+                      ? '🎉 You unlocked a FREE standard hourly base clean!' 
+                      : 'Complete ${5 - streakProgress} more standard booking(s) to unlock milestone 5!',
+                  style: const TextStyle(color: Color(0xFFCCFBF1), fontSize: 11.5, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOfferCard(Map<String, String> offer) {
+    return Container(
+      width: 200,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.1),
+            AppColors.secondary.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppStyles.paddingMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              offer['tag']!,
+              style: AppStyles.labelBold.copyWith(
+                color: AppColors.white,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppStyles.paddingBase),
+          Flexible(
+            child: Text(
+              offer['title']!,
+              style: AppStyles.headlineSmall.copyWith(
+                fontSize: 16,
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: AppStyles.paddingSmall),
+          Flexible(
+            child: Text(
+              offer['subtitle']!,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 13,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Row(
+                      children: [
+                        const Icon(Icons.local_offer, color: Color(0xFF0D9488)),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(offer['title']!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(offer['subtitle']!, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                        const SizedBox(height: 16),
+                        const Text('Use Coupon Code:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                offer['code']!,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.5, color: Color(0xFF0D9488)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.copy, color: Color(0xFF64748B)),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Coupon code ${offer['code']} copied to clipboard!')),
+                                  );
+                                },
+                              )
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              child: const Text(
+                'Get Offer',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   Widget _buildServiceCard(BuildContext context, dynamic service) {
     return GestureDetector(
       onTap: () {
@@ -378,94 +833,115 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.05),
-              blurRadius: 20,
+              color: AppColors.black.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                Container(
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(AppStyles.radiusXL),
-                      topRight: Radius.circular(AppStyles.radiusXL),
-                    ),
-                  ),
-                  child: Center(
+            // Image/Icon Section
+            Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(AppStyles.radiusLarge),
+                  topRight: Radius.circular(AppStyles.radiusLarge),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Center(
                     child: Icon(
                       Icons.cleaning_services,
                       size: 48,
                       color: AppColors.primary,
                     ),
                   ),
-                ),
-                Positioned(
-                  top: AppStyles.paddingSmall,
-                  right: AppStyles.paddingSmall,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppStyles.paddingBase,
-                      vertical: AppStyles.paddingSmall,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '\$${service.basePrice.toStringAsFixed(0)}+',
-                      style: AppStyles.labelBold.copyWith(
-                        color: AppColors.primary,
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppStyles.paddingBase),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.restaurant,
-                        size: 18,
+                      decoration: BoxDecoration(
                         color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: AppStyles.paddingSmall),
-                      Expanded(
-                        child: Text(
-                          service.name,
-                          style: AppStyles.labelBold.copyWith(
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      child: Text(
+                        '\$${service.basePrice.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: AppStyles.paddingSmall),
-                  Text(
-                    service.description ?? 'Professional cleaning service',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.onSurfaceVariant,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
+              ),
+            ),
+            // Content Section
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        service.name ?? 'Service',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Flexible(
+                      child: Text(
+                        service.description ?? 'Professional cleaning service',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.onSurfaceVariant,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${service.durationHours.toStringAsFixed(1)}h',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -473,6 +949,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
 
   Widget _buildBookingsTab() {
     return Consumer<BookingProvider>(
@@ -537,19 +1014,20 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         final now = DateTime.now();
-        final incoming = bookingProvider.bookings.where((booking) {
-          final dateTime = DateTime.tryParse(
-              '${booking.bookingDate.toIso8601String().split('T').first}T${booking.bookingTime}');
-          return !['completed', 'cancelled'].contains(booking.status) &&
-              (dateTime == null || dateTime.isAfter(now));
-        }).toList();
-        final past = bookingProvider.bookings.where((booking) {
-          final dateTime = DateTime.tryParse(
-              '${booking.bookingDate.toIso8601String().split('T').first}T${booking.bookingTime}');
-          return ['completed', 'cancelled'].contains(booking.status) ||
-              (dateTime != null && dateTime.isBefore(now));
-        }).toList();
-        final visibleBookings = _bookingTabIndex == 0 ? incoming : past;
+        final List<dynamic> upcoming = bookingProvider.bookings
+            .where((dynamic booking) => _isUpcomingBooking(booking, now))
+            .toList();
+        final List<dynamic> completed = bookingProvider.bookings
+            .where((dynamic booking) => booking.status == 'completed')
+            .toList();
+        final List<dynamic> cancelled = bookingProvider.bookings
+            .where((dynamic booking) => booking.status == 'cancelled')
+            .toList();
+        final visibleBookings = _bookingTabIndex == 0
+            ? upcoming
+            : _bookingTabIndex == 1
+                ? completed
+                : cancelled;
 
         return RefreshIndicator(
           onRefresh: bookingProvider.fetchMyBookings,
@@ -565,8 +1043,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    _buildBookingTab('Incoming', 0, incoming.length),
-                    _buildBookingTab('Past', 1, past.length),
+                    _buildBookingTab('Upcoming', 0, upcoming.length),
+                    _buildBookingTab('Completed', 1, completed.length),
+                    _buildBookingTab('Cancelled', 2, cancelled.length),
                   ],
                 ),
               ),
@@ -580,8 +1059,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Text(
                     _bookingTabIndex == 0
-                        ? 'No incoming bookings.'
-                        : 'No past bookings yet.',
+                        ? 'No upcoming bookings.'
+                        : _bookingTabIndex == 1
+                            ? 'No completed bookings yet.'
+                            : 'No cancelled bookings.',
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -619,93 +1100,99 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBookingCard(dynamic booking) {
-    final extras = (booking.extras ?? '')
+    final extrasString = booking.extras?.toString() ?? '';
+    final List<String> extras = extrasString
         .split(',')
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppStyles.paddingMedium),
-      padding: const EdgeInsets.all(AppStyles.paddingMedium),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  booking.isCustom
-                      ? 'Custom cleaning request'
-                      : booking.address,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(booking.status),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  booking.getStatusLabel(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).pushNamed('/booking-details', arguments: booking);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppStyles.paddingMedium),
+        padding: const EdgeInsets.all(AppStyles.paddingMedium),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    booking.isCustom
+                        ? 'Custom cleaning request'
+                        : booking.address,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${booking.bookingDate.toString().split(' ')[0]} at ${booking.bookingTime}',
-            style: TextStyle(fontSize: 12, color: AppColors.darkGray),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${booking.address}, ${booking.city}',
-            style: const TextStyle(fontSize: 13),
-          ),
-          if (booking.isCustom) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(booking.status),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    booking.getStatusLabel(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             Text(
-              '${booking.propertyType ?? 'Property'} - ${booking.roomCount} rooms'
-              '${booking.bathroomsCount > 0 ? ', ${booking.bathroomsCount} baths' : ''}'
-              '${booking.kitchensCount > 0 ? ', ${booking.kitchensCount} kitchens' : ''}'
-              ' - ${booking.cleaningType == 'deep' ? 'Deep' : 'Normal'}',
+              '${booking.bookingDate.toString().split(' ')[0]} at ${booking.bookingTime}',
               style: TextStyle(fontSize: 12, color: AppColors.darkGray),
             ),
-          ],
-          if (extras.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${booking.address}, ${booking.city}',
+              style: const TextStyle(fontSize: 13),
+            ),
+            if (booking.isCustom) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${booking.propertyType ?? 'Property'} - ${booking.roomCount} rooms'
+                '${booking.bathroomsCount > 0 ? ', ${booking.bathroomsCount} baths' : ''}'
+                '${booking.kitchensCount > 0 ? ', ${booking.kitchensCount} kitchens' : ''}'
+                ' - ${booking.cleaningType == 'deep' ? 'Deep' : 'Normal'}',
+                style: TextStyle(fontSize: 12, color: AppColors.darkGray),
+              ),
+            ],
+            if (extras.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: extras.take(3).map<Widget>((String extra) {
+                  return Chip(
+                    label: Text(extra, style: const TextStyle(fontSize: 11)),
+                    visualDensity: VisualDensity.compact,
+                  );
+                }).toList(),
+              ),
+            ],
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: extras.take(3).map<Widget>((extra) {
-                return Chip(
-                  label: Text(extra, style: const TextStyle(fontSize: 11)),
-                  visualDensity: VisualDensity.compact,
-                );
-              }).toList(),
+            Text(
+              '\$${booking.totalPrice.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
             ),
           ],
-          const SizedBox(height: 8),
-          Text(
-            '\$${booking.totalPrice.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -773,12 +1260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildProfileOption(
                         icon: Icons.location_on_outlined,
                         title: 'My Addresses',
-                        onTap: () => _showInfoSheet(
-                          title: 'My Addresses',
-                          icon: Icons.location_on_outlined,
-                          message:
-                              'Your next booking addresses will appear here for quick reuse.',
-                        ),
+                        onTap: () => Navigator.of(context).pushNamed('/addresses'),
                       ),
                       _buildProfileOption(
                         icon: Icons.payment_outlined,
@@ -860,6 +1342,9 @@ class _HomeScreenState extends State<HomeScreen> {
         TextEditingController(text: authProvider.user?.fullName ?? '');
     final phoneController =
         TextEditingController(text: authProvider.user?.phone ?? '');
+    final emailController =
+        TextEditingController(text: authProvider.user?.email ?? '');
+    final _formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
       context: context,
@@ -877,72 +1362,94 @@ class _HomeScreenState extends State<HomeScreen> {
             bottom: MediaQuery.of(sheetContext).viewInsets.bottom +
                 AppStyles.paddingLarge,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Edit Profile', style: AppStyles.headlineSmall),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full name',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Edit Profile', style: AppStyles.headlineSmall),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: emailController,
+                  enabled: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nameController,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your full name.';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Full name',
+                    prefixIcon: Icon(Icons.person_outline),
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (nameController.text.trim().isEmpty) {
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your phone number.';
+                    }
+                    if (!RegExp(r'^\+?[0-9]{7,15}\$').hasMatch(value.trim())) {
+                      return 'Enter a valid phone number.';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Phone',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (!_formKey.currentState!.validate()) {
+                        return;
+                      }
+                      final success = await context.read<AuthProvider>().updateProfile(
+                            fullName: nameController.text.trim(),
+                            phone: phoneController.text.trim(),
+                          );
+                      if (!mounted) return;
+                      Navigator.pop(sheetContext);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter your name'),
-                          backgroundColor: AppColors.error,
+                        SnackBar(
+                          content: Text(success
+                              ? 'Profile updated successfully'
+                              : (context.read<AuthProvider>().error ??
+                                  'Profile update failed')),
+                          backgroundColor:
+                              success ? AppColors.success : AppColors.error,
                         ),
                       );
-                      return;
-                    }
-                    final success =
-                        await context.read<AuthProvider>().updateProfile(
-                              fullName: nameController.text.trim(),
-                              phone: phoneController.text.trim(),
-                            );
-                    if (!mounted) return;
-                    Navigator.pop(sheetContext);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(success
-                            ? 'Profile updated'
-                            : (context.read<AuthProvider>().error ??
-                                'Profile update failed')),
-                        backgroundColor:
-                            success ? AppColors.success : AppColors.error,
-                      ),
-                    );
-                  },
-                  child: const Text('Save Changes'),
+                    },
+                    child: const Text('Save Changes'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
     ).whenComplete(() {
       nameController.dispose();
       phoneController.dispose();
+      emailController.dispose();
     });
   }
 
@@ -993,7 +1500,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),

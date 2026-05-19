@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/service_provider.dart';
 import 'providers/booking_provider.dart';
+import 'providers/address_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/login_screen.dart';
@@ -11,6 +12,8 @@ import 'screens/home_screen.dart';
 import 'screens/booking_screen.dart';
 import 'screens/custom_booking_screen.dart';
 import 'screens/booking_confirmation_screen.dart';
+import 'screens/my_addresses_screen.dart';
+import 'screens/booking_details_screen.dart';
 import 'models/booking.dart';
 import 'models/service.dart';
 
@@ -30,6 +33,9 @@ class NaddefliApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => BookingProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AddressProvider(),
         ),
       ],
       child: MaterialApp(
@@ -61,6 +67,11 @@ class NaddefliApp extends StatelessWidget {
           '/booking-confirmation': (context) {
             final booking = ModalRoute.of(context)?.settings.arguments;
             return BookingConfirmationScreen(booking: booking as Booking);
+          },
+          '/addresses': (context) => const MyAddressesScreen(),
+          '/booking-details': (context) {
+            final booking = ModalRoute.of(context)?.settings.arguments;
+            return BookingDetailsScreen(booking: booking as Booking);
           },
         },
       ),

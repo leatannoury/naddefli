@@ -87,6 +87,28 @@ const Booking = sequelize.define('Booking', {
     allowNull: true,
     comment: 'JSON string of extra options',
   },
+  start_time: {
+    type: DataTypes.STRING(5),
+    allowNull: true,
+  },
+  end_time: {
+    type: DataTypes.STRING(5),
+    allowNull: true,
+  },
+  duration_hours: {
+    type: DataTypes.DECIMAL(5, 2),
+    defaultValue: 1.0,
+    allowNull: false,
+  },
+  discount_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0.0,
+    allowNull: false,
+  },
+  promo_code: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

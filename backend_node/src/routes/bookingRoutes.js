@@ -33,4 +33,10 @@ router.put(
   bookingController.cancelBooking
 );
 
+router.put(
+  '/complete/:id',
+  authMiddleware,
+  bookingController.completeBooking
+);
+
 module.exports = router;
