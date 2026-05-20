@@ -102,6 +102,11 @@ exports.login = async (req, res) => {
       return sendError(res, 'Invalid email or password', 401);
     }
 
+    // Check if user is blocked
+    if (user.is_blocked) {
+      return sendError(res, 'Your account has been suspended. Please contact support.', 403);
+    }
+
     const token = generateToken(user);
 
     sendSuccess(res, {

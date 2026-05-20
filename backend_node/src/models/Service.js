@@ -35,6 +35,35 @@ const Service = sequelize.define('Service', {
     allowNull: true,
     comment: 'Image URL or file path',
   },
+  add_ons: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'JSON-encoded list of add-on options and prices',
+    get() {
+      const rawValue = this.getDataValue('add_ons');
+      if (!rawValue) return [];
+      try {
+        const parsed = JSON.parse(rawValue);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    },
+    set(value) {
+      if (Array.isArray(value)) {
+        this.setDataValue('add_ons', JSON.stringify(value));
+      } else if (typeof value === 'string') {
+        this.setDataValue('add_ons', value);
+      } else {
+        this.setDataValue('add_ons', null);
+      }
+    }
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    allowNull: false,
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

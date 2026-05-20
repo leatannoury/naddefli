@@ -101,6 +101,36 @@ const ensureBookingColumns = async () => {
     });
     console.log('✅ Added completed_bookings_count column to users table');
   }
+  if (!usersTable.is_blocked) {
+    await queryInterface.addColumn('users', 'is_blocked', {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    });
+    console.log('✅ Added is_blocked column to users table');
+  }
+
+  // 3b. Check and add columns to services table
+  const servicesTable = await queryInterface.describeTable('services');
+  if (!servicesTable.is_active) {
+    await queryInterface.addColumn('services', 'is_active', {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    });
+    console.log('✅ Added is_active column to services table');
+  }
+
+  // 3c. Check and add columns to promo_codes table
+  const promoCodesTable = await queryInterface.describeTable('promo_codes');
+  if (!promoCodesTable.is_active) {
+    await queryInterface.addColumn('promo_codes', 'is_active', {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    });
+    console.log('✅ Added is_active column to promo_codes table');
+  }
 
   // 4. Check and add columns to bookings table
   const bookingsTable = await queryInterface.describeTable('bookings');

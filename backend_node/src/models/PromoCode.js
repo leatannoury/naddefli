@@ -34,6 +34,11 @@ const PromoCode = sequelize.define('PromoCode', {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    allowNull: false,
+  },
 }, {
   tableName: 'promo_codes',
   timestamps: false,
