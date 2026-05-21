@@ -11,6 +11,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Paper,
   TextField,
   InputAdornment,
@@ -86,6 +87,26 @@ const Customers = () => {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleSortBy = (field) => {
+    // toggle asc/desc for the same field
+    if (field === 'name') {
+      setSortField(prev => (prev === 'name_asc' ? 'name_desc' : 'name_asc'));
+      return;
+    }
+    if (field === 'loyalty') {
+      setSortField(prev => (prev === 'loyalty_asc' ? 'loyalty_desc' : 'loyalty_asc'));
+      return;
+    }
+    if (field === 'bookings') {
+      setSortField(prev => (prev === 'bookings_asc' ? 'bookings_desc' : 'bookings_asc'));
+      return;
+    }
+    if (field === 'joined') {
+      setSortField(prev => (prev === 'newest' ? 'oldest' : 'newest'));
+      return;
     }
   };
 
@@ -220,15 +241,14 @@ const Customers = () => {
     }
     return true;
   }).sort((a, b) => {
-    if (sortField === 'loyalty_desc') {
-      return (b.loyalty_points || 0) - (a.loyalty_points || 0);
-    }
-    if (sortField === 'loyalty_asc') {
-      return (a.loyalty_points || 0) - (b.loyalty_points || 0);
-    }
-    if (sortField === 'blocked_first') {
-      return (b.is_blocked ? 1 : 0) - (a.is_blocked ? 1 : 0);
-    }
+    if (sortField === 'loyalty_desc') return (b.loyalty_points || 0) - (a.loyalty_points || 0);
+    if (sortField === 'loyalty_asc') return (a.loyalty_points || 0) - (b.loyalty_points || 0);
+    if (sortField === 'blocked_first') return (b.is_blocked ? 1 : 0) - (a.is_blocked ? 1 : 0);
+    if (sortField === 'name_asc') return (a.full_name || '').localeCompare(b.full_name || '');
+    if (sortField === 'name_desc') return (b.full_name || '').localeCompare(a.full_name || '');
+    if (sortField === 'bookings_asc') return (a.bookings_count || 0) - (b.bookings_count || 0);
+    if (sortField === 'bookings_desc') return (b.bookings_count || 0) - (a.bookings_count || 0);
+    if (sortField === 'oldest') return new Date(a.created_at || a.updated_at || 0) - new Date(b.created_at || b.updated_at || 0);
     return new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0);
   });
 
@@ -376,12 +396,28 @@ const Customers = () => {
           <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>Full Name</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>
+                  <TableSortLabel active={sortField.startsWith('name')} direction={sortField === 'name_desc' ? 'desc' : 'asc'} onClick={() => handleSortBy('name')}>
+                    Full Name
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>Email Address</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>Phone Number</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>Loyalty Points</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>Cleanings booked</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>
+                  <TableSortLabel active={sortField.includes('loyalty')} direction={sortField === 'loyalty_desc' ? 'desc' : 'asc'} onClick={() => handleSortBy('loyalty')}>
+                    Loyalty Points
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>
+                  <TableSortLabel active={sortField.includes('bookings')} direction={sortField === 'bookings_desc' ? 'desc' : 'asc'} onClick={() => handleSortBy('bookings')}>
+                    Cleanings booked
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>
+                  <TableSortLabel active={sortField === 'newest' || sortField === 'oldest'} direction={sortField === 'oldest' ? 'asc' : 'desc'} onClick={() => handleSortBy('joined')}>
+                    Status
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc', pr: 3 }}>Actions</TableCell>
               </TableRow>
             </TableHead>

@@ -52,8 +52,8 @@ export const authAPI = {
 };
 
 export const dashboardAPI = {
-  getStats: async () => {
-    const res = await api.get('/admin/dashboard');
+  getStats: async (timeframe = 'day') => {
+    const res = await api.get(`/admin/dashboard?timeframe=${encodeURIComponent(timeframe)}`);
     return res.data;
   }
 };

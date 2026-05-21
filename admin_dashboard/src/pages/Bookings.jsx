@@ -73,8 +73,17 @@ const Bookings = () => {
 
     try {
       const bookingsRes = await bookingsAPI.getAll();
-      if (bookingsRes && bookingsRes.success) {
+      if (!bookingsRes) {
+        setBookings([]);
+      } else if (bookingsRes.success && Array.isArray(bookingsRes.data)) {
         setBookings(bookingsRes.data || []);
+      } else if (Array.isArray(bookingsRes)) {
+        setBookings(bookingsRes);
+      } else if (bookingsRes.data && Array.isArray(bookingsRes.data)) {
+        setBookings(bookingsRes.data);
+      } else {
+        console.warn('Unexpected bookings response shape', bookingsRes);
+        setBookings([]);
       }
     } catch (error) {
       console.error('Failed to load bookings list:', error);

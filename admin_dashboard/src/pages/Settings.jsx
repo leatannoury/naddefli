@@ -37,6 +37,10 @@ const Settings = () => {
   const [bookingLimit, setBookingLimit] = useState(20);
   const [defaultPricing, setDefaultPricing] = useState(15.0);
   const [allowSameDay, setAllowSameDay] = useState(true);
+  const [timezone, setTimezone] = useState('UTC');
+  const [currency, setCurrency] = useState('USD');
+  const [autoConfirm, setAutoConfirm] = useState(false);
+  const [bookingBuffer, setBookingBuffer] = useState(2);
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -53,6 +57,10 @@ const Settings = () => {
         setBookingLimit(parseInt(data.bookingLimitPerDay) || 20);
         setDefaultPricing(parseFloat(data.defaultPricingPerHour) || 15.0);
         setAllowSameDay(data.allowSameDayBookings !== false);
+        setTimezone(data.timezone || 'UTC');
+        setCurrency(data.currency || 'USD');
+        setAutoConfirm(!!data.autoConfirmBookings);
+        setBookingBuffer(parseInt(data.bookingBufferHours || 2));
       }
     } catch (err) {
       console.error('Failed to retrieve system settings:', err);
@@ -77,7 +85,11 @@ const Settings = () => {
       supportEmail,
       bookingLimitPerDay: parseInt(bookingLimit),
       defaultPricingPerHour: parseFloat(defaultPricing),
-      allowSameDayBookings: allowSameDay
+      allowSameDayBookings: allowSameDay,
+      timezone,
+      currency,
+      autoConfirmBookings: autoConfirm,
+      bookingBufferHours: parseInt(bookingBuffer, 10)
     };
 
     try {
@@ -160,6 +172,24 @@ const Settings = () => {
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
               />
 
+              <TextField
+                label="Timezone"
+                fullWidth
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                helperText="Timezone used for reporting and scheduling (IANA, e.g. Europe/Paris)"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+              />
+
+              <TextField
+                label="Currency"
+                fullWidth
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                helperText="ISO currency code used for invoices (e.g. USD, EUR)"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+              />
+
               <Divider />
 
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0A2540', mb: -1, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -239,6 +269,28 @@ const Settings = () => {
                 }
                 label="Allow same-day urgency checkouts"
                 componentsProps={{ typography: { fontWeight: 600, color: '#424e5e', fontSize: '0.92rem' } }}
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={autoConfirm}
+                    onChange={(e) => setAutoConfirm(e.target.checked)}
+                    sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#00d4b6' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#00d4b6' } }}
+                  />
+                }
+                label="Auto-confirm bookings when cleaners available"
+                componentsProps={{ typography: { fontWeight: 600, color: '#424e5e', fontSize: '0.92rem' } }}
+              />
+
+              <TextField
+                label="Booking Buffer (hours)"
+                fullWidth
+                type="number"
+                value={bookingBuffer}
+                onChange={(e) => setBookingBuffer(e.target.value)}
+                helperText="Minimum lead time between bookings to allow scheduling buffer."
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
               />
             </Stack>
           </Card>

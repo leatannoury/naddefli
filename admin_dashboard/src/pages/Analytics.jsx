@@ -6,7 +6,11 @@ import {
   Typography,
   Button,
   Stack,
-  Divider
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   RefreshOutlined,
@@ -57,13 +61,14 @@ const Analytics = () => {
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [timeframe, setTimeframe] = useState('day');
 
-  const fetchAnalyticsData = async (silent = false) => {
+  const fetchAnalyticsData = async (silent = false, tf = timeframe) => {
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const res = await dashboardAPI.getStats();
+      const res = await dashboardAPI.getStats(tf);
       if (res && res.success) {
         setStats(res.data.stats);
         setTrends(res.data.trends || []);
@@ -77,11 +82,17 @@ const Analytics = () => {
   };
 
   useEffect(() => {
-    fetchAnalyticsData();
+    fetchAnalyticsData(false, timeframe);
   }, []);
 
   const handleManualRefresh = () => {
-    fetchAnalyticsData();
+    fetchAnalyticsData(false, timeframe);
+  };
+
+  const handleTimeframeChange = (e) => {
+    const tf = e.target.value;
+    setTimeframe(tf);
+    fetchAnalyticsData(false, tf);
   };
 
   // 1. Line Chart: Booking Count & Estimated Value Trend
@@ -187,7 +198,17 @@ const Analytics = () => {
             Consolidated analytical insights on transactions volume, service demands, and conversion ratios.
           </Typography>
         </Box>
-        <Button
+        <Stack direction="row" spacing={2} alignItems="center">
+          <FormControl size="small">
+            <InputLabel id="tf-label">Period</InputLabel>
+            <Select labelId="tf-label" label="Period" value={timeframe} onChange={handleTimeframeChange} sx={{ minWidth: 120 }}>
+              <MenuItem value="day">Day (30d)</MenuItem>
+              <MenuItem value="month">Month (12m)</MenuItem>
+              <MenuItem value="year">Year (5y)</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
           variant="outlined"
           startIcon={<RefreshOutlined />}
           onClick={handleManualRefresh}
@@ -205,7 +226,8 @@ const Analytics = () => {
           }}
         >
           {isRefreshing ? 'Refreshing...' : 'Refresh'}
-        </Button>
+          </Button>
+        </Stack>
       </Box>
 
       {/* Numerical Metrics row */}

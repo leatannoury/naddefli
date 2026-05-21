@@ -11,6 +11,7 @@ import {
   TableHead,
   TableRow,
   Paper,
+  TableSortLabel,
   TextField,
   Dialog,
   DialogTitle,
@@ -53,6 +54,7 @@ const Promos = () => {
   // Pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortField, setSortField] = useState('code_asc');
 
   // Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -202,11 +204,28 @@ const Promos = () => {
     setPage(0);
   };
 
+  const handleSortBy = (field) => {
+    if (field === 'code') setSortField(prev => (prev === 'code_asc' ? 'code_desc' : 'code_asc'));
+    if (field === 'value') setSortField(prev => (prev === 'value_asc' ? 'value_desc' : 'value_asc'));
+    if (field === 'expires') setSortField(prev => (prev === 'expires_asc' ? 'expires_desc' : 'expires_asc'));
+  };
+
   const filteredPromos = promos.filter((p) => {
     if (searchQuery.trim() !== '') {
       return p.code?.toLowerCase().includes(searchQuery.toLowerCase());
     }
     return true;
+  });
+
+  // Apply sorting
+  filteredPromos.sort((a, b) => {
+    if (sortField === 'code_asc') return (a.code || '').localeCompare(b.code || '');
+    if (sortField === 'code_desc') return (b.code || '').localeCompare(a.code || '');
+    if (sortField === 'value_asc') return (a.value || 0) - (b.value || 0);
+    if (sortField === 'value_desc') return (b.value || 0) - (a.value || 0);
+    if (sortField === 'expires_asc') return new Date(a.expires_at || 0) - new Date(b.expires_at || 0);
+    if (sortField === 'expires_desc') return new Date(b.expires_at || 0) - new Date(a.expires_at || 0);
+    return 0;
   });
 
   const getConditionLabel = (condition) => {
@@ -316,10 +335,22 @@ const Promos = () => {
           <Table sx={{ minWidth: 800 }}>
             <TableHead sx={{ bgcolor: '#f6f9fc' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Promo Code</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386' }}>
+                  <TableSortLabel active={sortField.startsWith('code')} direction={sortField === 'code_desc' ? 'desc' : 'asc'} onClick={() => handleSortBy('code')}>
+                    Promo Code
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Discount Type</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Discount Value</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Validity / Expiration</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386' }}>
+                  <TableSortLabel active={sortField.startsWith('value')} direction={sortField === 'value_desc' ? 'desc' : 'asc'} onClick={() => handleSortBy('value')}>
+                    Discount Value
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386' }}>
+                  <TableSortLabel active={sortField.startsWith('expires')} direction={sortField === 'expires_desc' ? 'desc' : 'asc'} onClick={() => handleSortBy('expires')}>
+                    Validity / Expiration
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Conditions</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Status</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600, color: '#697386', pr: 3 }}>Actions</TableCell>

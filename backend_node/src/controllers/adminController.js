@@ -26,7 +26,11 @@ const readSettings = () => {
     supportEmail: 'support@naddefli.com',
     bookingLimitPerDay: 20,
     defaultPricingPerHour: 15.0,
-    allowSameDayBookings: true
+    allowSameDayBookings: true,
+    timezone: 'UTC',
+    currency: 'USD',
+    autoConfirmBookings: false,
+    bookingBufferHours: 2
   };
 };
 
@@ -144,25 +148,57 @@ exports.getDashboard = async (req, res) => {
       limit: 5
     });
 
-    // Booking Trends (last 7 days counts)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const trends = await Booking.findAll({
+    // Booking Trends: support timeframe grouping (day, month, year)
+    const timeframe = (req.query.timeframe || 'day').toLowerCase();
+    let startDate = new Date();
+    if (timeframe === 'month') {
+      startDate.setMonth(startDate.getMonth() - 12);
+    } else if (timeframe === 'year') {
+      startDate.setFullYear(startDate.getFullYear() - 5);
+    } else {
+      // default to 30 days for 'day'
+      startDate.setDate(startDate.getDate() - 30);
+    }
+
+    // Fetch bookings since startDate and aggregate in JS to keep DB-agnostic
+    const rawBookings = await Booking.findAll({
       where: {
-        created_at: {
-          [Op.gte]: sevenDaysAgo
-        }
+        created_at: { [Op.gte]: startDate }
       },
-      attributes: [
-        [sequelize.fn('date', sequelize.col('created_at')), 'date'],
-        [sequelize.fn('count', sequelize.col('id')), 'count'],
-        [sequelize.fn('SUM', sequelize.col('total_price')), 'revenue']
-      ],
-      group: [sequelize.fn('date', sequelize.col('created_at'))],
-      order: [[sequelize.fn('date', sequelize.col('created_at')), 'ASC']],
+      attributes: ['created_at', 'total_price'],
+      order: [['created_at', 'ASC']],
       raw: true
     });
+
+    const bucketMap = new Map();
+    const pad = (n) => (n < 10 ? `0${n}` : `${n}`);
+
+    rawBookings.forEach((b) => {
+      const d = new Date(b.created_at);
+      let key;
+      if (timeframe === 'month') {
+        key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; // YYYY-MM
+      } else if (timeframe === 'year') {
+        key = `${d.getFullYear()}`; // YYYY
+      } else {
+        key = d.toISOString().slice(0, 10); // YYYY-MM-DD
+      }
+
+      const cur = bucketMap.get(key) || { count: 0, revenue: 0 };
+      cur.count += 1;
+      cur.revenue += parseFloat(b.total_price || 0);
+      bucketMap.set(key, cur);
+    });
+
+    // Build trends array sorted by key
+    const trends = Array.from(bucketMap.entries())
+      .map(([key, val]) => {
+        let dateLabel = key;
+        if (timeframe === 'month') dateLabel = `${key}-01`;
+        if (timeframe === 'year') dateLabel = `${key}-01-01`;
+        return { date: dateLabel, count: val.count, revenue: val.revenue.toFixed(2) };
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     sendSuccess(res, {
       stats: {
@@ -793,7 +829,18 @@ exports.getSettings = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { businessName, supportPhone, supportEmail, bookingLimitPerDay, defaultPricingPerHour, allowSameDayBookings } = req.body;
+    const {
+      businessName,
+      supportPhone,
+      supportEmail,
+      bookingLimitPerDay,
+      defaultPricingPerHour,
+      allowSameDayBookings,
+      timezone,
+      currency,
+      autoConfirmBookings,
+      bookingBufferHours
+    } = req.body;
 
     const current = readSettings();
     
@@ -803,6 +850,10 @@ exports.updateSettings = async (req, res) => {
     if (bookingLimitPerDay !== undefined) current.bookingLimitPerDay = parseInt(bookingLimitPerDay, 10);
     if (defaultPricingPerHour !== undefined) current.defaultPricingPerHour = parseFloat(defaultPricingPerHour);
     if (allowSameDayBookings !== undefined) current.allowSameDayBookings = !!allowSameDayBookings;
+    if (timezone !== undefined) current.timezone = timezone;
+    if (currency !== undefined) current.currency = currency;
+    if (autoConfirmBookings !== undefined) current.autoConfirmBookings = !!autoConfirmBookings;
+    if (bookingBufferHours !== undefined) current.bookingBufferHours = parseInt(bookingBufferHours, 10);
 
     const success = writeSettings(current);
     if (!success) {
