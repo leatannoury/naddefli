@@ -127,15 +127,25 @@ const Promos = () => {
   };
 
   const handleSavePromo = async () => {
-    if (!formCode || !formValue) {
-      alert('Please enter a promo code and value.');
+    const code = (formCode || '').toString().trim().toUpperCase().replace(/\s+/g, '');
+    const normalize = (v) => {
+      if (v === undefined || v === null) return NaN;
+      const s = String(v).trim().replace(',', '.');
+      if (s === '') return NaN;
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : NaN;
+    };
+    const valueNum = normalize(formValue);
+
+    if (!code || Number.isNaN(valueNum) || valueNum <= 0) {
+      alert('Please enter a valid promo code and a value greater than 0.');
       return;
     }
 
     const promoData = {
-      code: formCode.toUpperCase().replace(/\s+/g, ''),
+      code,
       type: formType,
-      value: parseFloat(formValue),
+      value: valueNum,
       conditions: formConditions || null,
       expires_at: formExpiresAt ? new Date(formExpiresAt).toISOString() : null,
       is_active: formIsActive

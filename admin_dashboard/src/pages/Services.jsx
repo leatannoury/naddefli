@@ -147,20 +147,44 @@ const Services = () => {
 
   // Save Service (Create or Update)
   const handleSaveService = async () => {
-    if (!formName || !formBasePrice || !formDuration) {
-      alert('Please fill in name, base price, and duration hours.');
+    // Robust validation: trim name, normalize decimal separators, ensure numeric > 0
+    const name = (formName || '').toString().trim();
+    const normalizeNumber = (v) => {
+      if (v === undefined || v === null) return NaN;
+      let s = String(v).trim();
+      if (s === '') return NaN;
+      // Replace common comma decimal separator
+      s = s.replace(/\u066B/g, '.') // arabic decimal separator
+           .replace(/,/g, '.')
+           .replace(/\u066C/g, '') // arabic thousands separator
+           .replace(/\s+/g, '');
+      // Strip non numeric except dot, minus
+      const cleaned = s.replace(/[^0-9.\-]/g, '');
+      if (cleaned === '' ) return NaN;
+      const n = parseFloat(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    };
+
+    const basePriceNum = normalizeNumber(formBasePrice);
+    const durationNum = normalizeNumber(formDuration);
+
+    // Debug log to help identify edge-cases where values are not parsed as expected
+    console.debug('Service save input', { name, rawBase: formBasePrice, rawDuration: formDuration, basePriceNum, durationNum });
+
+    if (!name || Number.isNaN(basePriceNum) || Number.isNaN(durationNum) || basePriceNum <= 0 || durationNum <= 0) {
+      alert(`Please provide a valid name, base price (>0) and duration hours (>0).\nParsed values -> name: "${name}", basePrice: ${basePriceNum}, duration: ${durationNum}`);
       return;
     }
 
     const serviceData = {
-      name: formName,
+      name,
       description: formDescription,
-      base_price: parseFloat(formBasePrice),
-      duration_hours: parseFloat(formDuration),
+      base_price: basePriceNum,
+      duration_hours: durationNum,
       image: formImage || null,
       add_ons: formAddOns.filter((addon) => addon.name && addon.price).map((addon) => ({
         name: addon.name,
-        price: parseFloat(addon.price)
+        price: parseFloat(String(addon.price || '').replace(',', '.'))
       })),
       is_active: formIsActive
     };
@@ -180,6 +204,8 @@ const Services = () => {
       }
     } catch (err) {
       console.error('Failed to save cleaning service:', err);
+      const serverMsg = err?.response?.data?.message || err?.response?.data?.error || err.message;
+      alert(`Failed to save service: ${serverMsg}`);
     }
   };
 
@@ -198,7 +224,9 @@ const Services = () => {
         setServices(prev => prev.map(s => s.id === service.id ? { ...s, is_active: nextActiveState } : s));
       }
     } catch (err) {
-      console.error('Failed to toggle active state of service:', err);
+      console.error('Failed to retrieve services list:', error);
+      const serverMsg = error?.response?.data?.message || error?.response?.data?.error || error.message;
+      alert(`Failed to load services: ${serverMsg}`);
     }
   };
 

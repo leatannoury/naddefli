@@ -47,6 +47,28 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/promo', promoRoutes);
 
+// Development-only debug endpoints
+if (process.env.NODE_ENV === 'development') {
+  const { User } = require('./models');
+  const { hashPassword, generateToken } = require('./utils/helpers');
+
+  app.post('/api/debug/create-admin', async (req, res) => {
+    try {
+      const { email = 'admin@local.test', full_name = 'Local Admin', password = 'password123' } = req.body || {};
+      let user = await User.findOne({ where: { email } });
+      if (!user) {
+        const hashed = await hashPassword(password);
+        user = await User.create({ full_name, email, password: hashed, role: 'admin' });
+      }
+      const token = generateToken({ id: user.id, email: user.email, role: user.role });
+      return res.status(201).json({ success: true, data: { user: { id: user.id, email: user.email, full_name: user.full_name }, token } });
+    } catch (err) {
+      console.error('Debug create-admin error:', err);
+      return res.status(500).json({ success: false, message: 'Failed to create admin', error: err.message });
+    }
+  });
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -112,6 +134,13 @@ const ensureBookingColumns = async () => {
 
   // 3b. Check and add columns to services table
   const servicesTable = await queryInterface.describeTable('services');
+  if (!servicesTable.add_ons) {
+    await queryInterface.addColumn('services', 'add_ons', {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    });
+    console.log('✅ Added add_ons column to services table');
+  }
   if (!servicesTable.is_active) {
     await queryInterface.addColumn('services', 'is_active', {
       type: DataTypes.BOOLEAN,
