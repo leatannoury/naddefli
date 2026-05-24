@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const notificationController = require('../controllers/notificationController');
 const { authMiddleware, authorizationMiddleware } = require('../middleware/auth');
 
 const adminAuth = [authMiddleware, authorizationMiddleware(['admin'])];
@@ -41,10 +42,15 @@ router.delete('/services/:id', adminAuth, adminController.deleteService);
 
 // Promos CRUD
 router.get('/promos', adminAuth, adminController.getAllPromos);
-exports.router = router; // Note: CommonJS usually does module.exports
 router.post('/promos', adminAuth, adminController.createPromo);
 router.put('/promos/:id', adminAuth, adminController.updatePromo);
 router.delete('/promos/:id', adminAuth, adminController.deletePromo);
+
+// Notification operations
+router.get('/notifications/unread', adminAuth, adminController.getNotificationUnread);
+router.get('/notifications', adminAuth, notificationController.getNotifications);
+router.put('/notifications/:id/read', adminAuth, notificationController.markAsRead);
+router.put('/notifications/read-all', adminAuth, notificationController.markAllAsRead);
 
 // Config Settings
 router.get('/settings', adminAuth, adminController.getSettings);

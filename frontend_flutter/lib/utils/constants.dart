@@ -1,9 +1,9 @@
 // Use 192.168.1.107 for your physical device (Infinix X6827)
-const String BASE_URL = 'http://192.168.1.107:5000/api'; 
-// Use localhost for local web/desktop development
-// const String BASE_URL = 'http://localhost:5000/api'; 
+const String BASE_URL = 'http://192.168.1.107:5000/api';
+const String API_ORIGIN = 'http://192.168.1.107:5000';
 
 class ApiEndpoints {
+  static const String baseOrigin = API_ORIGIN;
   // Auth
   static const String register = '$BASE_URL/auth/register';
   static const String login = '$BASE_URL/auth/login';

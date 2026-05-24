@@ -1,27 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
-  Grid,
   Typography,
   Button,
   TextField,
-  Switch,
-  FormControlLabel,
-  Divider,
   Stack,
-  InputAdornment,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Divider,
+  InputAdornment,
 } from '@mui/material';
-import {
-  SaveOutlined,
-  RefreshOutlined,
-  BusinessOutlined,
-  ContactSupportOutlined,
-  EngineeringOutlined,
-  SettingsSuggestOutlined
-} from '@mui/icons-material';
+import { SaveOutlined, RefreshOutlined, ContactSupportOutlined, AttachMoneyOutlined } from '@mui/icons-material';
 import { settingsAPI } from '../services/api';
 
 const Settings = () => {
@@ -29,42 +19,26 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-
-  // Form Fields
-  const [businessName, setBusinessName] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportEmail, setSupportEmail] = useState('');
-  const [bookingLimit, setBookingLimit] = useState(20);
-  const [defaultPricing, setDefaultPricing] = useState(15.0);
-  const [allowSameDay, setAllowSameDay] = useState(true);
-  const [timezone, setTimezone] = useState('UTC');
-  const [currency, setCurrency] = useState('USD');
-  const [autoConfirm, setAutoConfirm] = useState(false);
-  const [bookingBuffer, setBookingBuffer] = useState(2);
+  const [normalHourlyRate, setNormalHourlyRate] = useState(4.0);
+  const [deepHourlyRate, setDeepHourlyRate] = useState(6.0);
 
   const fetchSettings = async () => {
     setLoading(true);
     setSuccessMsg('');
     setErrorMsg('');
-
     try {
       const res = await settingsAPI.get();
       if (res && res.success) {
         const data = res.data || {};
-        setBusinessName(data.businessName || 'Naddefli Cleaning Services');
-        setSupportPhone(data.supportPhone || '+1 (555) 019-2834');
-        setSupportEmail(data.supportEmail || 'support@naddefli.com');
-        setBookingLimit(parseInt(data.bookingLimitPerDay) || 20);
-        setDefaultPricing(parseFloat(data.defaultPricingPerHour) || 15.0);
-        setAllowSameDay(data.allowSameDayBookings !== false);
-        setTimezone(data.timezone || 'UTC');
-        setCurrency(data.currency || 'USD');
-        setAutoConfirm(!!data.autoConfirmBookings);
-        setBookingBuffer(parseInt(data.bookingBufferHours || 2));
+        setSupportPhone(data.supportPhone || '');
+        setSupportEmail(data.supportEmail || '');
+        setNormalHourlyRate(parseFloat(data.normalHourlyRate) || 4.0);
+        setDeepHourlyRate(parseFloat(data.deepHourlyRate) || 6.0);
       }
     } catch (err) {
-      console.error('Failed to retrieve system settings:', err);
-      setErrorMsg('Could not fetch settings from Node.js server. Using local defaults.');
+      setErrorMsg('Could not load settings.');
     } finally {
       setLoading(false);
     }
@@ -78,30 +52,20 @@ const Settings = () => {
     setSaving(true);
     setSuccessMsg('');
     setErrorMsg('');
-
-    const payload = {
-      businessName,
-      supportPhone,
-      supportEmail,
-      bookingLimitPerDay: parseInt(bookingLimit),
-      defaultPricingPerHour: parseFloat(defaultPricing),
-      allowSameDayBookings: allowSameDay,
-      timezone,
-      currency,
-      autoConfirmBookings: autoConfirm,
-      bookingBufferHours: parseInt(bookingBuffer, 10)
-    };
-
     try {
-      const res = await settingsAPI.update(payload);
+      const res = await settingsAPI.update({
+        supportPhone,
+        supportEmail,
+        normalHourlyRate,
+        deepHourlyRate,
+      });
       if (res && res.success) {
-        setSuccessMsg('System configuration settings saved successfully!');
+        setSuccessMsg('Settings saved. Contact info and rates sync to the mobile app.');
       } else {
-        setErrorMsg('Failed to persist settings details.');
+        setErrorMsg('Failed to save settings.');
       }
     } catch (err) {
-      console.error('Failed to update platform settings:', err);
-      setErrorMsg('Error sending update request to Node.js backend.');
+      setErrorMsg('Error saving settings.');
     } finally {
       setSaving(false);
     }
@@ -111,229 +75,73 @@ const Settings = () => {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 400, gap: 2 }}>
         <CircularProgress sx={{ color: '#635bff' }} />
-        <Typography variant="body2" sx={{ color: '#697386' }}>Loading system configurations...</Typography>
+        <Typography variant="body2" sx={{ color: '#697386' }}>Loading settings…</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {/* Header Row */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#0A2540', letterSpacing: '-0.04em' }}>
-            System Settings
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#697386', mt: 0.5 }}>
-            Configure business information, support contact details, and operational limits.
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshOutlined />}
-          onClick={fetchSettings}
-          sx={{
-            borderColor: '#e6ebf1',
-            color: '#0A2540',
-            textTransform: 'none',
-            px: 2.5,
-            py: 1.2,
-            borderRadius: '8px',
-            bgcolor: '#fff',
-            fontWeight: 600,
-            '&:hover': { borderColor: '#635bff', bgcolor: '#f6f9fc' }
-          }}
-        >
-          Refresh Settings
-        </Button>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 720 }}>
+      <Box>
+        <Typography variant="h4" sx={{ fontWeight: 800, color: '#0A2540', letterSpacing: '-0.04em' }}>
+          Settings
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#697386', mt: 0.5 }}>
+          Customer support contact and hourly rates shown in the mobile app.
+        </Typography>
       </Box>
 
-      {/* Notifications feed */}
-      {successMsg && <Alert severity="success" sx={{ borderRadius: '8px' }}>{successMsg}</Alert>}
-      {errorMsg && <Alert severity="error" sx={{ borderRadius: '8px' }}>{errorMsg}</Alert>}
+      {successMsg && <Alert severity="success">{successMsg}</Alert>}
+      {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
 
-      <Grid container spacing={4}>
-        {/* Profile and Contacts Section */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 4, borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 1, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <BusinessOutlined sx={{ color: '#635bff' }} /> Business Unit Profile
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#697386', display: 'block', mb: 3 }}>
-              Enter information relating to this branch or business unit displayed on receipts and applications.
-            </Typography>
-            
-            <Stack spacing={3}>
-              <TextField
-                label="Registered Business Name"
-                fullWidth
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
+      <Card sx={{ p: 4, borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ContactSupportOutlined sx={{ color: '#635bff' }} /> Customer Support
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#697386', mb: 3 }}>
+          These details appear in the app under Help & Support.
+        </Typography>
+        <Stack spacing={2.5}>
+          <TextField label="Support phone" fullWidth value={supportPhone} onChange={(e) => setSupportPhone(e.target.value)} />
+          <TextField label="Support email" fullWidth value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} />
+        </Stack>
 
-              <TextField
-                label="Timezone"
-                fullWidth
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                helperText="Timezone used for reporting and scheduling (IANA, e.g. Europe/Paris)"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
+        <Divider sx={{ my: 4 }} />
 
-              <TextField
-                label="Currency"
-                fullWidth
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                helperText="ISO currency code used for invoices (e.g. USD, EUR)"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AttachMoneyOutlined sx={{ color: '#00d4b6' }} /> Hourly Rates
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#697386', mb: 3 }}>
+          Used for price calculation in the app when customers book cleanings.
+        </Typography>
+        <Stack spacing={2.5}>
+          <TextField
+            label="Standard cleaning rate"
+            type="number"
+            fullWidth
+            value={normalHourlyRate}
+            onChange={(e) => setNormalHourlyRate(e.target.value)}
+            InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment>, endAdornment: <InputAdornment position="end">/hr</InputAdornment> }}
+          />
+          <TextField
+            label="Deep cleaning rate"
+            type="number"
+            fullWidth
+            value={deepHourlyRate}
+            onChange={(e) => setDeepHourlyRate(e.target.value)}
+            InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment>, endAdornment: <InputAdornment position="end">/hr</InputAdornment> }}
+          />
+        </Stack>
+      </Card>
 
-              <Divider />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0A2540', mb: -1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ContactSupportOutlined sx={{ color: '#a3b1c2', fontSize: 20 }} /> Customer Support Coordinates
-              </Typography>
-
-              <TextField
-                label="Support Phone Number"
-                fullWidth
-                value={supportPhone}
-                onChange={(e) => setSupportPhone(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
-
-              <TextField
-                label="Support Email Address"
-                fullWidth
-                value={supportEmail}
-                onChange={(e) => setSupportEmail(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
-            </Stack>
-          </Card>
-        </Grid>
-
-        {/* Operating Limits and Rates Section */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 4, borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 1, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <EngineeringOutlined sx={{ color: '#00d4b6' }} /> Operational Limits & Rates
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#697386', display: 'block', mb: 3 }}>
-              Calibrate business boundaries, booking thresholds, and base parameters.
-            </Typography>
-
-            <Stack spacing={3}>
-              <TextField
-                label="Maximum Appointments / Day"
-                fullWidth
-                type="number"
-                value={bookingLimit}
-                onChange={(e) => setBookingLimit(e.target.value)}
-                helperText="Auto-rejects bookings when this threshold is met in a given region."
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
-
-              <TextField
-                label="Hourly Invoice Rate for Custom Cleanings"
-                fullWidth
-                type="number"
-                value={defaultPricing}
-                onChange={(e) => setDefaultPricing(e.target.value)}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                  endAdornment: <InputAdornment position="end">/ hr</InputAdornment>
-                }}
-                helperText="Applied automatically in custom cleaning estimations."
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
-
-              <Divider />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0A2540', mb: -1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SettingsSuggestOutlined sx={{ color: '#a3b1c2', fontSize: 20 }} /> Scheduling Preferences
-              </Typography>
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={allowSameDay}
-                    onChange={(e) => setAllowSameDay(e.target.checked)}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': { color: '#635bff' },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#635bff' }
-                    }}
-                  />
-                }
-                label="Allow same-day urgency checkouts"
-                componentsProps={{ typography: { fontWeight: 600, color: '#424e5e', fontSize: '0.92rem' } }}
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={autoConfirm}
-                    onChange={(e) => setAutoConfirm(e.target.checked)}
-                    sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#00d4b6' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#00d4b6' } }}
-                  />
-                }
-                label="Auto-confirm bookings when cleaners available"
-                componentsProps={{ typography: { fontWeight: 600, color: '#424e5e', fontSize: '0.92rem' } }}
-              />
-
-              <TextField
-                label="Booking Buffer (hours)"
-                fullWidth
-                type="number"
-                value={bookingBuffer}
-                onChange={(e) => setBookingBuffer(e.target.value)}
-                helperText="Minimum lead time between bookings to allow scheduling buffer."
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-              />
-            </Stack>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Form Submission Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-        <Button
-          variant="outlined"
-          onClick={fetchSettings}
-          sx={{
-            borderColor: '#e6ebf1',
-            color: '#0A2540',
-            textTransform: 'none',
-            px: 4,
-            py: 1.5,
-            borderRadius: '8px',
-            fontWeight: 600,
-            '&:hover': { borderColor: '#635bff', bgcolor: '#f6f9fc' }
-          }}
-        >
-          Discard Changes
+      <Stack direction="row" spacing={2} justifyContent="flex-end">
+        <Button variant="outlined" startIcon={<RefreshOutlined />} onClick={fetchSettings} sx={{ textTransform: 'none' }}>
+          Reset
         </Button>
-        <Button
-          variant="contained"
-          startIcon={<SaveOutlined />}
-          onClick={handleSaveSettings}
-          disabled={saving}
-          sx={{
-            bgcolor: '#635bff',
-            textTransform: 'none',
-            boxShadow: 'none',
-            px: 4,
-            py: 1.5,
-            borderRadius: '8px',
-            fontWeight: 600,
-            '&:hover': { bgcolor: '#0A2540' }
-          }}
-        >
-          {saving ? 'Saving...' : 'Apply Configurations'}
+        <Button variant="contained" startIcon={<SaveOutlined />} onClick={handleSaveSettings} disabled={saving} sx={{ bgcolor: '#635bff', textTransform: 'none', boxShadow: 'none' }}>
+          {saving ? 'Saving…' : 'Save settings'}
         </Button>
-      </Box>
+      </Stack>
     </Box>
   );
 };

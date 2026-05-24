@@ -228,6 +228,7 @@ class BookingProvider extends ChangeNotifier {
     required String cleaningType,
     required String extras,
     required double subtotal,
+    String? bookingDate,
   }) async {
     _isLoading = true;
     _error = null;
@@ -239,6 +240,7 @@ class BookingProvider extends ChangeNotifier {
         cleaningType: cleaningType,
         extras: extras,
         subtotal: subtotal,
+        bookingDate: bookingDate,
       );
       _isLoading = false;
       notifyListeners();

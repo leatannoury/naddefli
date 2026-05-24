@@ -1,5 +1,6 @@
 const { PromoCode, Booking } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
+const { evaluatePromoConditions } = require('../utils/helpers');
 
 /**
  * Promo Controller
@@ -8,18 +9,18 @@ const { sendSuccess, sendError } = require('../utils/response');
 
 exports.validatePromoCode = async (req, res) => {
   try {
-    const { code, cleaning_type, extras, subtotal } = req.body;
+    const { code, cleaning_type, extras, subtotal, booking_date } = req.body;
 
     if (!code) {
       return sendError(res, 'Promo code is required', 400);
     }
 
     const promo = await PromoCode.findOne({
-      where: { code: code.toUpperCase().trim() },
+      where: { code: code.toUpperCase().trim(), is_active: true },
     });
 
     if (!promo) {
-      return sendError(res, 'Invalid promo code', 404);
+      return sendError(res, 'Invalid or inactive promo code', 404);
     }
 
     // Check expiration
@@ -27,51 +28,32 @@ exports.validatePromoCode = async (req, res) => {
       return sendError(res, 'Promo code has expired', 400);
     }
 
-    // Validate rules based on code
-    const conditions = promo.conditions ? JSON.parse(promo.conditions) : {};
+    const conditionCheck = await evaluatePromoConditions({
+      conditions: promo.conditions,
+      cleaning_type,
+      subtotal,
+      booking_date,
+      userId: req.user.id,
+      Booking,
+    });
+
+    if (!conditionCheck.ok) {
+      return sendError(res, conditionCheck.message, 400);
+    }
+
     let discountAmount = 0;
-    let message = 'Promo code applied successfully!';
+    const message = 'Promo code applied successfully!';
 
-    if (promo.code === 'DEEP20') {
-      if (cleaning_type !== 'deep') {
-        return sendError(res, 'This promo code only works for Deep Cleaning services', 400);
-      }
-      discountAmount = (parseFloat(subtotal) || 0) * 0.20;
-    } else if (promo.code === 'FIRST10') {
-      // Check user completed bookings
-      const completedCount = await Booking.count({
-        where: { user_id: req.user.id, status: 'completed' },
-      });
-      if (completedCount > 0) {
-        return sendError(res, 'This promo code only works on your first booking', 400);
-      }
-      discountAmount = (parseFloat(subtotal) || 0) * 0.10;
-    } else if (promo.code === 'WINDOWFREE') {
-      // Check if windows cleaning is in extras list
-      const extrasList = Array.isArray(extras)
-        ? extras
-        : String(extras || '')
-            .split(',')
-            .map(e => e.trim().toLowerCase())
-            .filter(Boolean);
-
-      const hasWindows = extrasList.some(item =>
-        item.includes('window') || item.includes('windows')
-      );
-
-      if (!hasWindows) {
-        return sendError(res, 'Please add Windows Cleaning add-on to apply this promo code', 400);
-      }
-      // Windows cleaning adds $10, so make it free
-      discountAmount = 10.0;
-      message = 'Free Windows Cleaning add-on applied!';
+    // Calculate discount based on promo type and value
+    if (promo.type === 'percentage') {
+      discountAmount = (parseFloat(subtotal || 0) * (parseFloat(promo.value) / 100));
     } else {
-      // Generic percentage discount
-      if (promo.type === 'percentage') {
-        discountAmount = (parseFloat(subtotal) || 0) * (parseFloat(promo.value) / 100);
-      } else {
-        discountAmount = parseFloat(promo.value);
-      }
+      discountAmount = parseFloat(promo.value);
+    }
+
+    // Ensure discount does not exceed subtotal
+    if (discountAmount > parseFloat(subtotal || 0)) {
+      discountAmount = parseFloat(subtotal || 0);
     }
 
     sendSuccess(

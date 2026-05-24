@@ -52,15 +52,31 @@ export const authAPI = {
 };
 
 export const dashboardAPI = {
-  getStats: async (timeframe = 'day') => {
-    const res = await api.get(`/admin/dashboard?timeframe=${encodeURIComponent(timeframe)}`);
+  getStats: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    if (params.timeframe) queryParams.append('timeframe', params.timeframe);
+    if (params.filterMode) queryParams.append('filterMode', params.filterMode);
+    if (params.dateField) queryParams.append('dateField', params.dateField);
+
+    const queryString = queryParams.toString();
+    const url = `/admin/dashboard${queryString ? `?${queryString}` : ''}`;
+    const res = await api.get(url);
     return res.data;
   }
 };
 
 export const bookingsAPI = {
-  getAll: async () => {
-    const res = await api.get('/admin/bookings');
+  getAll: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    if (params.filterMode) queryParams.append('filterMode', params.filterMode);
+    if (params.status) queryParams.append('status', params.status);
+    const queryString = queryParams.toString();
+    const url = `/admin/bookings${queryString ? `?${queryString}` : ''}`;
+    const res = await api.get(url);
     return res.data;
   },
   getById: async (id) => {
@@ -155,11 +171,20 @@ export const promosAPI = {
 
 export const notificationsAPI = {
   getUnread: async () => {
-    const res = await api.get('/admin/notifications/unread');
+    const lastSeen = localStorage.getItem('naddefli_notifications_last_seen') || '0';
+    const res = await api.get(`/admin/notifications/unread?lastSeen=${lastSeen}`);
     return res.data;
   },
   getAll: async () => {
     const res = await api.get('/admin/notifications');
+    return res.data;
+  },
+  markAsRead: async (id) => {
+    const res = await api.put(`/admin/notifications/${id}/read`);
+    return res.data;
+  },
+  markAllAsRead: async () => {
+    const res = await api.put('/admin/notifications/read-all');
     return res.data;
   }
 };

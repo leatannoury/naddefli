@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -38,16 +38,23 @@ import {
 } from '@mui/icons-material';
 import { bookingsAPI } from '../services/api';
 import BookingDetails from '../components/BookingDetails';
+import DateFilterBar, { todayStr } from '../components/DateFilterBar';
 import { useLocation } from 'react-router-dom';
 
 const Bookings = () => {
   const location = useLocation();
   const highlightBookingId = location.state?.highlightBookingId || null;
   const initialFilterTab = location.state?.initialTab || null;
+  const routeFilterMode = location.state?.filterMode;
+  const routeStartDate = location.state?.startDate;
+  const routeEndDate = location.state?.endDate;
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [filterMode, setFilterMode] = useState(routeFilterMode || 'all');
+  const [startDate, setStartDate] = useState(routeStartDate || todayStr());
+  const [endDate, setEndDate] = useState(routeEndDate || todayStr());
 
   // Filter states
   const [tabValue, setTabValue] = useState('all');
@@ -67,12 +74,25 @@ const Bookings = () => {
   const [cancelBookingId, setCancelBookingId] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
 
-  const fetchBookings = async (silent = false) => {
+  const buildParams = useCallback(() => {
+    const params = { filterMode, dateField: 'booking_date' };
+    if (filterMode === 'today') {
+      const t = todayStr();
+      params.startDate = t;
+      params.endDate = t;
+    } else if (filterMode === 'range') {
+      params.startDate = startDate;
+      params.endDate = endDate;
+    }
+    return params;
+  }, [filterMode, startDate, endDate]);
+
+  const fetchBookings = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const bookingsRes = await bookingsAPI.getAll();
+      const bookingsRes = await bookingsAPI.getAll(buildParams());
       if (!bookingsRes) {
         setBookings([]);
       } else if (bookingsRes.success && Array.isArray(bookingsRes.data)) {
@@ -82,7 +102,6 @@ const Bookings = () => {
       } else if (bookingsRes.data && Array.isArray(bookingsRes.data)) {
         setBookings(bookingsRes.data);
       } else {
-        console.warn('Unexpected bookings response shape', bookingsRes);
         setBookings([]);
       }
     } catch (error) {
@@ -91,18 +110,26 @@ const Bookings = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [buildParams]);
 
   useEffect(() => {
     fetchBookings();
+  }, [fetchBookings]);
 
-    // Auto-refresh every 5 seconds
-    const interval = setInterval(() => {
-      fetchBookings(true);
-    }, 5000);
-
+  useEffect(() => {
+    const interval = setInterval(() => fetchBookings(true), 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchBookings]);
+
+  const handleFilterModeChange = (mode) => {
+    setFilterMode(mode);
+    setPage(0);
+    if (mode === 'today') {
+      const t = todayStr();
+      setStartDate(t);
+      setEndDate(t);
+    }
+  };
 
   // Highlight specific booking if routed from Dashboard
   useEffect(() => {
@@ -295,6 +322,15 @@ const Bookings = () => {
           {isRefreshing ? 'Refreshing...' : 'Refresh Now'}
         </Button>
       </Box>
+
+      <DateFilterBar
+        filterMode={filterMode}
+        startDate={startDate}
+        endDate={endDate}
+        onFilterModeChange={handleFilterModeChange}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+      />
 
       {/* Control Card with Tabs & Search */}
       <Card sx={{ borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none', overflow: 'hidden' }}>

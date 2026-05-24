@@ -4,6 +4,8 @@ import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../providers/booking_provider.dart';
 import '../utils/app_styles.dart';
+import '../utils/image_utils.dart';
+import '../services/app_settings_service.dart';
 
 /// Home Screen
 class HomeScreen extends StatefulWidget {
@@ -21,6 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _heroPageIndex = 0;
   final PageController _heroPageController = PageController(viewportFraction: 0.92);
   final TextEditingController _searchController = TextEditingController();
+  Map<String, dynamic> _appSettings = {
+    'supportPhone': '+961 00 000 000',
+    'supportEmail': 'support@naddefli.local',
+  };
 
   final List<Map<String, String>> _heroCards = [
     {
@@ -69,7 +75,62 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       _loadServices();
       _loadBookings();
+      _loadAppSettings();
     });
+  }
+
+  Future<void> _loadAppSettings() async {
+    final settings = await AppSettingsService.getPublicSettings();
+    if (mounted) {
+      setState(() => _appSettings = settings);
+    }
+  }
+
+  Widget _buildServiceImage(dynamic service) {
+    final imageUrl = resolveServiceImageUrl(service.image, imageUrl: service.imageUrl);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (imageUrl != null)
+          Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _serviceImageFallback(),
+            loadingBuilder: (_, child, progress) =>
+                progress == null ? child : _serviceImageFallback(),
+          )
+        else
+          _serviceImageFallback(),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '\$${service.basePrice.toStringAsFixed(0)}',
+              style: const TextStyle(
+                color: AppColors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _serviceImageFallback() {
+    return Container(
+      color: AppColors.primary.withValues(alpha: 0.08),
+      child: Center(
+        child: Icon(Icons.cleaning_services, size: 48, color: AppColors.primary),
+      ),
+    );
   }
 
   void _loadServices() {
@@ -847,47 +908,15 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image/Icon Section
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppStyles.radiusLarge),
-                  topRight: Radius.circular(AppStyles.radiusLarge),
-                ),
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppStyles.radiusLarge),
+                topRight: Radius.circular(AppStyles.radiusLarge),
               ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(
-                      Icons.cleaning_services,
-                      size: 48,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '\$${service.basePrice.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: SizedBox(
+                height: 120,
+                width: double.infinity,
+                child: _buildServiceImage(service),
               ),
             ),
             // Content Section
@@ -1284,7 +1313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: 'Help & Support',
                           icon: Icons.help_outline,
                           message:
-                              'For help, message support@naddefli.local or call +961 00 000 000.',
+                              'For help, message ${_appSettings['supportEmail'] ?? 'support@naddefli.local'} or call ${_appSettings['supportPhone'] ?? '+961 00 000 000'}.',
                         ),
                       ),
                       _buildProfileOption(

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -6,48 +6,29 @@ import {
   Typography,
   Button,
   Stack,
-  Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
 } from '@mui/material';
 import {
   RefreshOutlined,
   AttachMoney,
   CalendarMonth,
-  StarOutlined,
-  ShowChart
+  CheckCircleOutlined,
+  ShowChart,
 } from '@mui/icons-material';
-import { Line, Doughnut, Bar } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
-  ArcElement,
   Title as ChartTitle,
   Tooltip,
   Legend,
-  Filler
 } from 'chart.js';
 import { dashboardAPI } from '../services/api';
 import StatCard from '../components/StatCard';
+import DateFilterBar, { todayStr } from '../components/DateFilterBar';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  ChartTitle,
-  Tooltip,
-  Legend,
-  Filler
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTitle, Tooltip, Legend);
 
 const Analytics = () => {
   const [stats, setStats] = useState({
@@ -56,308 +37,182 @@ const Analytics = () => {
     cancelledBookings: 0,
     pendingBookings: 0,
     totalRevenue: '0.00',
-    promoCodesUsed: 0
+    promoCodesUsed: 0,
   });
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [filterMode, setFilterMode] = useState('today');
+  const [startDate, setStartDate] = useState(todayStr());
+  const [endDate, setEndDate] = useState(todayStr());
   const [timeframe, setTimeframe] = useState('day');
 
-  const fetchAnalyticsData = async (silent = false, tf = timeframe) => {
+  const buildParams = useCallback(() => {
+    const params = { filterMode, dateField: 'booking_date', timeframe };
+    if (filterMode === 'today') {
+      const t = todayStr();
+      params.startDate = t;
+      params.endDate = t;
+    } else if (filterMode === 'range') {
+      params.startDate = startDate;
+      params.endDate = endDate;
+    }
+    return params;
+  }, [filterMode, startDate, endDate, timeframe]);
+
+  const fetchAnalyticsData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const res = await dashboardAPI.getStats(tf);
+      const res = await dashboardAPI.getStats(buildParams());
       if (res && res.success) {
         setStats(res.data.stats);
         setTrends(res.data.trends || []);
       }
     } catch (err) {
-      console.error('Failed to load system analytics:', err);
+      console.error('Failed to load analytics:', err);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [buildParams]);
 
   useEffect(() => {
-    fetchAnalyticsData(false, timeframe);
-  }, []);
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData]);
 
-  const handleManualRefresh = () => {
-    fetchAnalyticsData(false, timeframe);
-  };
-
-  const handleTimeframeChange = (e) => {
-    const tf = e.target.value;
-    setTimeframe(tf);
-    fetchAnalyticsData(false, tf);
-  };
-
-  // 1. Line Chart: Booking Count & Estimated Value Trend
-  const chartLabels = trends.map(t => {
-    const d = new Date(t.date);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  });
-  const chartDataValues = trends.map(t => parseInt(t.count, 10) || 0);
-  const chartRevenueValues = trends.map(t => parseFloat(t.revenue) || 0);
-
-  const bookingTrendData = {
-    labels: chartLabels.length > 0 ? chartLabels : ['May 13', 'May 14', 'May 15', 'May 16', 'May 17', 'May 18', 'May 19'],
-    datasets: [
-      {
-        label: 'Daily Bookings',
-        data: chartDataValues.length > 0 ? chartDataValues : [3, 6, 4, 9, 5, 11, 7],
-        fill: true,
-        borderColor: '#635bff',
-        backgroundColor: 'rgba(99, 91, 255, 0.08)',
-        tension: 0.4,
-        pointBackgroundColor: '#635bff',
-        pointHoverRadius: 6,
-        yAxisID: 'bookings',
-      },
-      {
-        label: 'Daily Revenue',
-        data: chartRevenueValues.length > 0 ? chartRevenueValues : [120, 210, 180, 250, 170, 280, 168],
-        fill: false,
-        borderColor: '#00d4b6',
-        backgroundColor: 'rgba(0, 212, 182, 0.14)',
-        tension: 0.4,
-        pointBackgroundColor: '#00d4b6',
-        pointHoverRadius: 6,
-        yAxisID: 'revenue',
-      }
-    ]
-  };
-
-  // 2. Doughnut Chart: Job Status Breakdown
-  const statusDoughnutData = {
-    labels: ['Completed', 'Pending', 'Accepted', 'Cancelled'],
-    datasets: [
-      {
-        data: [
-          stats.completedBookings || 5,
-          stats.pendingBookings || 2,
-          stats.acceptedBookings || 3,
-          stats.cancelledBookings || 1
-        ],
-        backgroundColor: ['#00d4b6', '#f5a623', '#635bff', '#ff5f5f'],
-        borderWidth: 0,
-        hoverOffset: 4
-      }
-    ]
-  };
-
-  // 3. Horizontal Bar Chart: Category Popularity
-  const categoryBarData = {
-    labels: ['Home Cleaning', 'Kitchen Cleaning', 'Bathroom Deep Clean', 'Deep Disinfecting', 'Office Organizing'],
-    datasets: [
-      {
-        label: 'Completed Bookings',
-        data: [18, 12, 9, 5, 3],
-        backgroundColor: '#0A2540',
-        borderRadius: 6,
-        barThickness: 16
-      }
-    ]
-  };
-
-  const commonOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: '#697386',
-          font: { weight: 600, size: 11 },
-          padding: 20
-        }
-      },
-      tooltip: {
-        padding: 12,
-        backgroundColor: '#0A2540',
-        titleFont: { size: 13, weight: 'bold' }
-      }
+  const handleFilterModeChange = (mode) => {
+    setFilterMode(mode);
+    if (mode === 'today') {
+      const t = todayStr();
+      setStartDate(t);
+      setEndDate(t);
     }
   };
 
-  const revenue = parseFloat(stats.totalRevenue) || 0.0;
-  const avgTicket = stats.completedBookings > 0 ? revenue / stats.completedBookings : 0.0;
+  const chartLabels = trends.map((t) => {
+    const d = new Date(t.date);
+    if (timeframe === 'month') return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+    if (timeframe === 'year') return d.getFullYear().toString();
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  });
+  const chartBookingValues = trends.map((t) => parseInt(t.count, 10) || 0);
+  const chartRevenueValues = trends.map((t) => parseFloat(t.revenue) || 0);
+
+  const barData = {
+    labels: chartLabels.length > 0 ? chartLabels : ['No data'],
+    datasets: [
+      {
+        label: 'Bookings',
+        data: chartBookingValues.length > 0 ? chartBookingValues : [0],
+        backgroundColor: 'rgba(99, 91, 255, 0.75)',
+        borderRadius: 6,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Revenue ($)',
+        data: chartRevenueValues.length > 0 ? chartRevenueValues : [0],
+        backgroundColor: 'rgba(0, 212, 182, 0.75)',
+        borderRadius: 6,
+        yAxisID: 'y1',
+      },
+    ],
+  };
+
+  const revenue = parseFloat(stats.totalRevenue) || 0;
+  const avgTicket = stats.completedBookings > 0 ? revenue / stats.completedBookings : 0;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {/* Header Row */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, color: '#0A2540', letterSpacing: '-0.04em' }}>
-            System Analytics
+            Revenue & Booking Analytics
           </Typography>
           <Typography variant="body1" sx={{ color: '#697386', mt: 0.5 }}>
-            Consolidated analytical insights on transactions volume, service demands, and conversion ratios.
+            Bar chart of bookings and revenue by schedule date.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <FormControl size="small">
-            <InputLabel id="tf-label">Period</InputLabel>
-            <Select labelId="tf-label" label="Period" value={timeframe} onChange={handleTimeframeChange} sx={{ minWidth: 120 }}>
-              <MenuItem value="day">Day (30d)</MenuItem>
-              <MenuItem value="month">Month (12m)</MenuItem>
-              <MenuItem value="year">Year (5y)</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Button
+        <Button
           variant="outlined"
           startIcon={<RefreshOutlined />}
-          onClick={handleManualRefresh}
+          onClick={() => fetchAnalyticsData()}
           disabled={isRefreshing}
-          sx={{
-            borderColor: '#e6ebf1',
-            color: '#0A2540',
-            textTransform: 'none',
-            px: 2.5,
-            py: 1.2,
-            borderRadius: '8px',
-            bgcolor: '#fff',
-            fontWeight: 600,
-            '&:hover': { borderColor: '#635bff', bgcolor: '#f6f9fc' }
-          }}
+          sx={{ textTransform: 'none', borderColor: '#e6ebf1' }}
         >
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        </Stack>
+          {isRefreshing ? 'Refreshing…' : 'Refresh'}
+        </Button>
       </Box>
 
-      {/* Numerical Metrics row */}
+      <DateFilterBar
+        filterMode={filterMode}
+        startDate={startDate}
+        endDate={endDate}
+        timeframe={timeframe}
+        showTimeframe
+        onFilterModeChange={handleFilterModeChange}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onTimeframeChange={setTimeframe}
+      />
+
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Revenue Fulfills"
-            value={`$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            icon={<AttachMoney />}
-            color="#00d4b6"
-            subtitle="Completed appointments income"
-          />
+          <StatCard title="Revenue" value={`$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} icon={<AttachMoney />} color="#00d4b6" subtitle="Completed jobs in period" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Average Invoice Amount"
-            value={`$${avgTicket.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            icon={<ShowChart />}
-            color="#635bff"
-            subtitle="Per-job ticket average"
-          />
+          <StatCard title="Bookings" value={stats.totalBookings} icon={<CalendarMonth />} color="#635bff" subtitle="Scheduled in period" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Promo Campaigns Deduction"
-            value={`${stats.promoCodesUsed} claims`}
-            icon={<StarOutlined />}
-            color="#f5a623"
-            subtitle="Promo codes redemption counts"
-          />
+          <StatCard title="Completed" value={stats.completedBookings} icon={<CheckCircleOutlined />} color="#00d4b6" subtitle="Fulfilled jobs" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Completion Efficiency Ratio"
-            value={stats.totalBookings > 0 ? `${Math.round(((stats.completedBookings || 0) / stats.totalBookings) * 100)}%` : '0%'}
-            icon={<CalendarMonth />}
-            color="#00bcd4"
-            subtitle="Ratio of successfully closed cleans"
-          />
+          <StatCard title="Avg. ticket" value={`$${avgTicket.toFixed(2)}`} icon={<ShowChart />} color="#635bff" subtitle="Per completed job" />
         </Grid>
       </Grid>
 
-      {/* Graphical Dashboards */}
-      <Grid container spacing={4}>
-        {/* Booking & Revenue Growth Line */}
-        <Grid item xs={12} md={8}>
-          <Card sx={{ p: 3, borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none', height: 420, display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 1, letterSpacing: '-0.02em' }}>
-              Operational Transactions Flow
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#697386', mb: 3 }}>
-              Total cleaning contracts secured daily across the system directory.
-            </Typography>
-            <Box sx={{ flexGrow: 1, position: 'relative', minHeight: 0 }}>
-              <Line
-                data={bookingTrendData}
-                options={{
-                  ...commonOptions,
-                  plugins: { ...commonOptions.plugins, legend: { position: 'bottom' } },
-                  scales: {
-                    x: { grid: { display: false }, ticks: { color: '#697386', font: { weight: 500 } } },
-                    bookings: {
-                      type: 'linear',
-                      position: 'left',
-                      grid: { color: '#e6ebf1' },
-                      ticks: { precision: 0, color: '#697386' }
-                    },
-                    revenue: {
-                      type: 'linear',
-                      position: 'right',
-                      grid: { display: false },
-                      ticks: {
-                        callback: (value) => `$${value}`,
-                        color: '#697386'
-                      }
-                    }
-                  }
-                }}
-              />
-            </Box>
-          </Card>
-        </Grid>
-
-        {/* Cleaning Job Status pie */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3, borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none', height: 420, display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 1, letterSpacing: '-0.02em' }}>
-              Fulfillment Status
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#697386', mb: 3 }}>
-              Distribution of current booking statuses.
-            </Typography>
-            <Box sx={{ flexGrow: 1, position: 'relative', minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Doughnut
-                data={statusDoughnutData}
-                options={{
-                  ...commonOptions,
-                  cutout: '65%'
-                }}
-              />
-            </Box>
-          </Card>
-        </Grid>
-
-        {/* Horizontal Popular Categories Bar */}
-        <Grid item xs={12}>
-          <Card sx={{ p: 3, borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none', height: 380, display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 1, letterSpacing: '-0.02em' }}>
-              Cleaning Demands by Categories
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#697386', mb: 3 }}>
-              Volume of completed jobs across various categories.
-            </Typography>
-            <Box sx={{ flexGrow: 1, position: 'relative', minHeight: 0 }}>
-              <Bar
-                data={categoryBarData}
-                options={{
-                  ...commonOptions,
-                  indexAxis: 'y',
-                  plugins: { ...commonOptions.plugins, legend: { display: false } },
-                  scales: {
-                    x: { grid: { color: '#e6ebf1' }, ticks: { color: '#697386' } },
-                    y: { grid: { display: false }, ticks: { color: '#697386', font: { weight: 500 } } }
-                  }
-                }}
-              />
-            </Box>
-          </Card>
-        </Grid>
-      </Grid>
+      <Card sx={{ p: 3, borderRadius: '12px', border: '1px solid #e6ebf1', boxShadow: 'none' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', mb: 0.5 }}>
+          Bookings & Revenue
+        </Typography>
+        <Typography variant="caption" sx={{ color: '#697386', display: 'block', mb: 2 }}>
+          Purple bars = number of cleanings booked · Teal bars = revenue from completed jobs
+        </Typography>
+        <Box sx={{ height: 400 }}>
+          {!loading && (
+            <Bar
+              data={barData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                  legend: { position: 'bottom', labels: { font: { weight: 600 } } },
+                  tooltip: { padding: 12, backgroundColor: '#0A2540' },
+                },
+                scales: {
+                  x: { grid: { display: false }, ticks: { color: '#697386' } },
+                  y: {
+                    type: 'linear',
+                    position: 'left',
+                    title: { display: true, text: 'Bookings' },
+                    ticks: { precision: 0, color: '#635bff' },
+                    grid: { color: '#e6ebf1' },
+                  },
+                  y1: {
+                    type: 'linear',
+                    position: 'right',
+                    title: { display: true, text: 'Revenue ($)' },
+                    grid: { drawOnChartArea: false },
+                    ticks: { callback: (v) => `$${v}`, color: '#00d4b6' },
+                  },
+                },
+              }}
+            />
+          )}
+        </Box>
+      </Card>
     </Box>
   );
 };

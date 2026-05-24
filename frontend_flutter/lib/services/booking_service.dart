@@ -174,6 +174,7 @@ class BookingService {
     required String cleaningType,
     required String extras,
     required double subtotal,
+    String? bookingDate,
   }) async {
     try {
       final response = await HttpService.post(
@@ -183,6 +184,7 @@ class BookingService {
           'cleaning_type': cleaningType,
           'extras': extras,
           'subtotal': subtotal,
+          if (bookingDate != null) 'booking_date': bookingDate,
         },
       );
 

@@ -157,6 +157,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
       cleaningType: _cleaningType,
       extras: selectedExtrasList.join(', '),
       subtotal: subtotal,
+      bookingDate: DateFormat('yyyy-MM-dd').format(_selectedDate),
     );
 
     if (result['success']) {

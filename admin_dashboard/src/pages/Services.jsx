@@ -35,6 +35,7 @@ import {
   AccessTime
 } from '@mui/icons-material';
 import { servicesAPI } from '../services/api';
+import { resolveServiceImage } from '../utils/serviceImage';
 
 const Services = () => {
   const [services, setServices] = useState([]);
@@ -419,13 +420,14 @@ const Services = () => {
                 }}
               >
                 {/* Fallback image or custom image */}
-                {service.image ? (
+                {resolveServiceImage(service) ? (
                   <CardMedia
                     component="img"
                     height="140"
-                    image={service.image}
+                    image={resolveServiceImage(service)}
                     alt={service.name}
                     sx={{ objectFit: 'cover' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 ) : (
                   <Box
@@ -648,6 +650,10 @@ const Services = () => {
                 )}
               </Stack>
             </Box>
+
+            {formImage && resolveServiceImage({ image: formImage }) && (
+              <Box component="img" src={resolveServiceImage({ image: formImage })} alt="Preview" sx={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: '8px' }} />
+            )}
 
             <TextField
               label="Service Banner Image URL"

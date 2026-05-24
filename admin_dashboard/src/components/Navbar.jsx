@@ -33,8 +33,13 @@ const Navbar = ({ handleDrawerToggle, title = 'Overview' }) => {
 
   useEffect(() => {
     fetchNotificationCount();
-    const interval = setInterval(fetchNotificationCount, 30000); // refresh every 30s
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchNotificationCount, 15000);
+    const onUpdate = () => fetchNotificationCount();
+    window.addEventListener('naddefliNotificationsUpdated', onUpdate);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('naddefliNotificationsUpdated', onUpdate);
+    };
   }, []);
 
 

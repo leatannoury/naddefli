@@ -1,5 +1,11 @@
 const { User, Booking, Cleaner, Review, Service, PromoCode, Address, Notification } = require('../models');
-const { hashPassword, comparePassword, generateToken } = require('../utils/helpers');
+const {
+  hashPassword,
+  comparePassword,
+  generateToken,
+  parseDashboardDateRange,
+  formatServiceRecord,
+} = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
 const { Op } = require('sequelize');
@@ -24,13 +30,12 @@ const readSettings = () => {
     businessName: 'Naddefli Cleaning Services',
     supportPhone: '+1 (555) 019-2834',
     supportEmail: 'support@naddefli.com',
-    bookingLimitPerDay: 20,
-    defaultPricingPerHour: 15.0,
-    allowSameDayBookings: true,
-    timezone: 'UTC',
+    normalHourlyRate: 4.0,
+    deepHourlyRate: 6.0,
     currency: 'USD',
-    autoConfirmBookings: false,
-    bookingBufferHours: 2
+    timezone: 'UTC',
+    bookingBufferHours: 2,
+    autoConfirmBookings: false
   };
 };
 
@@ -104,69 +109,86 @@ exports.adminLogin = async (req, res) => {
  */
 exports.getDashboard = async (req, res) => {
   try {
-    // Total customers (users with role customer)
+    const { startDate, endDate, hasRange, filterMode, dateField } = parseDashboardDateRange(req.query);
+
+    const bookingWhere = {};
+    if (hasRange) {
+      bookingWhere[dateField] = { [Op.between]: [startDate, endDate] };
+    }
+
+    const pendingAllTime = await Booking.count({ where: { status: 'pending' } });
+
+    // Total customers (users with role customer) - all time
     const totalUsers = await User.count({
       where: { role: 'customer' },
     });
 
-    // Total cleaners
+    // Total cleaners - all time
     const totalCleaners = await User.count({
       where: { role: 'cleaner' },
     });
 
-    // Bookings by statuses
-    const totalBookings = await Booking.count();
-    const pendingBookings = await Booking.count({ where: { status: 'pending' } });
-    const completedBookings = await Booking.count({ where: { status: 'completed' } });
-    const cancelledBookings = await Booking.count({ where: { status: 'cancelled' } });
-    const acceptedBookings = await Booking.count({ where: { status: 'accepted' } });
+    // Bookings by statuses within date range
+    const totalBookings = await Booking.count({ where: bookingWhere });
+    const pendingBookings = await Booking.count({ where: { ...bookingWhere, status: 'pending' } });
+    const completedBookings = await Booking.count({ where: { ...bookingWhere, status: 'completed' } });
+    const cancelledBookings = await Booking.count({ where: { ...bookingWhere, status: 'cancelled' } });
+    const acceptedBookings = await Booking.count({ where: { ...bookingWhere, status: 'accepted' } });
 
-    // Total revenue
-    const totalRevenue = await Booking.findAll({
-      where: { status: 'completed' },
+    // Total revenue from completed bookings within date range
+    const totalRevenueResult = await Booking.findAll({
+      where: { ...bookingWhere, status: 'completed' },
       attributes: [[sequelize.fn('SUM', sequelize.col('total_price')), 'total']],
       raw: true,
     });
-    const revenue = parseFloat(totalRevenue[0]?.total || 0);
+    const revenue = parseFloat(totalRevenueResult[0]?.total || 0);
 
-    // Promo codes used count
+    // Promo codes used count within date range
     const promoCodesUsed = await Booking.count({
       where: {
+        ...bookingWhere,
         promo_code: {
           [Op.ne]: null
         }
       }
     });
 
-    // Fetch 5 most recent bookings with service & customer info
+    const recentOrderField = hasRange ? dateField : 'created_at';
     const recentBookings = await Booking.findAll({
+      where: hasRange ? bookingWhere : {},
       include: [
         { model: User, as: 'customer', attributes: ['full_name', 'email'] },
         { model: Service, as: 'service', attributes: ['name'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [[recentOrderField, 'DESC']],
       limit: 5
     });
 
-    // Booking Trends: support timeframe grouping (day, month, year)
     const timeframe = (req.query.timeframe || 'day').toLowerCase();
-    let startDate = new Date();
-    if (timeframe === 'month') {
-      startDate.setMonth(startDate.getMonth() - 12);
+    let trendStartDate = new Date();
+    let trendEndDate = new Date();
+    trendEndDate.setHours(23, 59, 59, 999);
+
+    if (hasRange) {
+      trendStartDate = startDate;
+      trendEndDate = endDate;
+    } else if (timeframe === 'month') {
+      trendStartDate.setMonth(trendStartDate.getMonth() - 12);
     } else if (timeframe === 'year') {
-      startDate.setFullYear(startDate.getFullYear() - 5);
+      trendStartDate.setFullYear(trendStartDate.getFullYear() - 5);
     } else {
-      // default to 30 days for 'day'
-      startDate.setDate(startDate.getDate() - 30);
+      trendStartDate.setDate(trendStartDate.getDate() - 30);
     }
 
-    // Fetch bookings since startDate and aggregate in JS to keep DB-agnostic
+    const trendWhere = {
+      [dateField]: { [Op.between]: [trendStartDate, trendEndDate] },
+      status: { [Op.in]: ['completed', 'accepted', 'pending'] },
+    };
+
     const rawBookings = await Booking.findAll({
-      where: {
-        created_at: { [Op.gte]: startDate }
-      },
-      attributes: ['created_at', 'total_price'],
-      order: [['created_at', 'ASC']],
+      where: trendWhere,
+      attributes: [dateField, 'total_price', 'status'],
+      order: [[dateField, 'ASC']],
       raw: true
     });
 
@@ -174,19 +196,21 @@ exports.getDashboard = async (req, res) => {
     const pad = (n) => (n < 10 ? `0${n}` : `${n}`);
 
     rawBookings.forEach((b) => {
-      const d = new Date(b.created_at);
+      const d = new Date(b[dateField]);
       let key;
       if (timeframe === 'month') {
-        key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; // YYYY-MM
+        key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
       } else if (timeframe === 'year') {
-        key = `${d.getFullYear()}`; // YYYY
+        key = `${d.getFullYear()}`;
       } else {
-        key = d.toISOString().slice(0, 10); // YYYY-MM-DD
+        key = d.toISOString().slice(0, 10);
       }
 
       const cur = bucketMap.get(key) || { count: 0, revenue: 0 };
       cur.count += 1;
-      cur.revenue += parseFloat(b.total_price || 0);
+      if (b.status === 'completed') {
+        cur.revenue += parseFloat(b.total_price || 0);
+      }
       bucketMap.set(key, cur);
     });
 
@@ -206,11 +230,18 @@ exports.getDashboard = async (req, res) => {
         totalCleaners,
         totalBookings,
         pendingBookings,
+        pendingBookingsAllTime: pendingAllTime,
         completedBookings,
         cancelledBookings,
         acceptedBookings,
         totalRevenue: revenue.toFixed(2),
         promoCodesUsed,
+      },
+      filter: {
+        filterMode: hasRange ? (filterMode || 'range') : 'all',
+        startDate: hasRange ? startDate.toISOString() : null,
+        endDate: hasRange ? endDate.toISOString() : null,
+        dateField,
       },
       recentBookings,
       trends
@@ -226,7 +257,23 @@ exports.getDashboard = async (req, res) => {
  */
 exports.getAllBookings = async (req, res) => {
   try {
+    const { startDate, endDate, hasRange, dateField } = parseDashboardDateRange({
+      ...req.query,
+      filterMode: req.query.startDate || req.query.endDate || req.query.filterMode === 'today'
+        ? (req.query.filterMode || 'range')
+        : 'all',
+    });
+
+    const where = {};
+    if (hasRange) {
+      where[dateField] = { [Op.between]: [startDate, endDate] };
+    }
+    if (req.query.status && req.query.status !== 'all') {
+      where.status = req.query.status;
+    }
+
     const bookings = await Booking.findAll({
+      where,
       include: [
         {
           model: User,
@@ -641,7 +688,7 @@ exports.getAllServices = async (req, res) => {
     const services = await Service.findAll({
       order: [['name', 'ASC']],
     });
-    sendSuccess(res, services);
+    sendSuccess(res, services.map(formatServiceRecord));
   } catch (error) {
     console.error('Get services error:', error);
     sendError(res, 'Failed to fetch services', 500, error);
@@ -656,17 +703,26 @@ exports.createService = async (req, res) => {
       return sendError(res, 'Name, base price, and duration are required', 400);
     }
 
+    // Process image: convert empty string to null, trim whitespace
+    let imageToSave = null;
+    if (image !== undefined && image !== null) {
+      const trimmed = image.trim();
+      if (trimmed !== '') {
+        imageToSave = trimmed;
+      }
+    }
+
     const service = await Service.create({
       name,
       description,
       base_price: parseFloat(base_price),
       duration_hours: parseFloat(duration_hours),
-      image: image || 'default.jpg',
+      image: imageToSave,
       add_ons: Array.isArray(add_ons) ? add_ons : [],
       is_active: is_active !== undefined ? !!is_active : true,
     });
 
-    sendSuccess(res, service, 'Service created successfully', 201);
+    sendSuccess(res, formatServiceRecord(service), 'Service created successfully', 201);
   } catch (error) {
     console.error('Create service error:', error);
     sendError(res, 'Failed to create service', 500, error);
@@ -683,17 +739,28 @@ exports.updateService = async (req, res) => {
       return sendError(res, 'Service not found', 404);
     }
 
+    // Process image: convert empty string to null, trim whitespace
+    let imageToSave = service.image; // Keep existing by default
+    if (image !== undefined && image !== null) {
+      const trimmed = image.trim();
+      if (trimmed !== '') {
+        imageToSave = trimmed;
+      } else {
+        imageToSave = null; // Explicitly set to null if empty string
+      }
+    }
+
     if (name !== undefined) service.name = name;
     if (description !== undefined) service.description = description;
     if (base_price !== undefined) service.base_price = parseFloat(base_price);
     if (duration_hours !== undefined) service.duration_hours = parseFloat(duration_hours);
-    if (image !== undefined) service.image = image;
+    if (image !== undefined) service.image = imageToSave;
     if (add_ons !== undefined) service.add_ons = Array.isArray(add_ons) ? add_ons : [];
     if (is_active !== undefined) service.is_active = !!is_active;
 
     await service.save();
 
-    sendSuccess(res, service, 'Service updated successfully');
+    sendSuccess(res, formatServiceRecord(service), 'Service updated successfully');
   } catch (error) {
     console.error('Update service error:', error);
     sendError(res, 'Failed to update service', 500, error);
@@ -818,6 +885,39 @@ exports.deletePromo = async (req, res) => {
  * CONFIG SETTINGS
  */
 
+exports.getPublicSettings = async (req, res) => {
+  try {
+    const settings = readSettings();
+    sendSuccess(res, {
+      supportPhone: settings.supportPhone,
+      supportEmail: settings.supportEmail,
+      normalHourlyRate: settings.normalHourlyRate,
+      deepHourlyRate: settings.deepHourlyRate,
+    });
+  } catch (error) {
+    sendError(res, 'Failed to read public settings', 500, error);
+  }
+};
+
+exports.getNotificationUnread = async (req, res) => {
+  try {
+    const lastSeenMs = parseInt(req.query.lastSeen || '0', 10);
+    const lastSeen = Number.isFinite(lastSeenMs) ? new Date(lastSeenMs) : new Date(0);
+
+    const unreadCount = await Booking.count({
+      where: {
+        created_at: { [Op.gt]: lastSeen },
+        status: 'pending',
+      },
+    });
+
+    sendSuccess(res, { unreadCount });
+  } catch (error) {
+    console.error('Unread notifications error:', error);
+    sendError(res, 'Failed to fetch unread notifications', 500, error);
+  }
+};
+
 exports.getSettings = async (req, res) => {
   try {
     const settings = readSettings();
@@ -833,11 +933,10 @@ exports.updateSettings = async (req, res) => {
       businessName,
       supportPhone,
       supportEmail,
-      bookingLimitPerDay,
-      defaultPricingPerHour,
-      allowSameDayBookings,
-      timezone,
+      normalHourlyRate,
+      deepHourlyRate,
       currency,
+      timezone,
       autoConfirmBookings,
       bookingBufferHours
     } = req.body;
@@ -847,11 +946,10 @@ exports.updateSettings = async (req, res) => {
     if (businessName !== undefined) current.businessName = businessName;
     if (supportPhone !== undefined) current.supportPhone = supportPhone;
     if (supportEmail !== undefined) current.supportEmail = supportEmail;
-    if (bookingLimitPerDay !== undefined) current.bookingLimitPerDay = parseInt(bookingLimitPerDay, 10);
-    if (defaultPricingPerHour !== undefined) current.defaultPricingPerHour = parseFloat(defaultPricingPerHour);
-    if (allowSameDayBookings !== undefined) current.allowSameDayBookings = !!allowSameDayBookings;
-    if (timezone !== undefined) current.timezone = timezone;
+    if (normalHourlyRate !== undefined) current.normalHourlyRate = parseFloat(normalHourlyRate);
+    if (deepHourlyRate !== undefined) current.deepHourlyRate = parseFloat(deepHourlyRate);
     if (currency !== undefined) current.currency = currency;
+    if (timezone !== undefined) current.timezone = timezone;
     if (autoConfirmBookings !== undefined) current.autoConfirmBookings = !!autoConfirmBookings;
     if (bookingBufferHours !== undefined) current.bookingBufferHours = parseInt(bookingBufferHours, 10);
 

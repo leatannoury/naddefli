@@ -10,6 +10,7 @@ process.on('uncaughtException', (error) => {
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { DataTypes } = require('sequelize');
 const sequelize = require('./config/db');
 const { initializeAssociations } = require('./models');
@@ -25,6 +26,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const promoRoutes = require('./routes/promoRoutes');
+const adminController = require('./controllers/adminController');
 
 const app = express();
 
@@ -32,6 +34,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Initialize model associations
 initializeAssociations();
@@ -46,6 +49,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/promo', promoRoutes);
+app.get('/api/settings/public', adminController.getPublicSettings);
 
 // Development-only debug endpoints
 if (process.env.NODE_ENV === 'development') {
