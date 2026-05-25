@@ -72,7 +72,7 @@ const DateFilterBar = ({
         </Button>
       </Stack>
 
-      {(filterMode === 'range' || filterMode === 'today') && (
+      {filterMode === 'range' && (
         <>
           <TextField
             label="From"

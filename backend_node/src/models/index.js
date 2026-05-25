@@ -6,6 +6,7 @@ const Review = require('./Review');
 const Notification = require('./Notification');
 const Address = require('./Address');
 const PromoCode = require('./PromoCode');
+const AddOn = require('./AddOn');
 
 /**
  * Define model associations
@@ -57,5 +58,6 @@ module.exports = {
   Notification,
   Address,
   PromoCode,
+  AddOn,
   initializeAssociations,
 };

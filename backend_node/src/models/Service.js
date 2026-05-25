@@ -31,7 +31,7 @@ const Service = sequelize.define('Service', {
     comment: 'Estimated duration in hours',
   },
   image: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.TEXT,
     allowNull: true,
     comment: 'Image URL or file path',
   },

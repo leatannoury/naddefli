@@ -21,6 +21,7 @@ class ApiEndpoints {
 
   // Notifications
   static const String notifications = '$BASE_URL/notifications';
+  static const String notificationsUnreadCount = '$BASE_URL/notifications/unread-count';
   static String markAsRead(String id) => '$BASE_URL/notifications/$id/read';
   static const String markAllAsRead = '$BASE_URL/notifications/read-all';
 

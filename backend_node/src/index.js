@@ -26,6 +26,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const promoRoutes = require('./routes/promoRoutes');
+const addonRoutes = require('./routes/addonRoutes');
 const adminController = require('./controllers/adminController');
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/promo', promoRoutes);
+app.use('/api/addons', addonRoutes);
 app.get('/api/settings/public', adminController.getPublicSettings);
 
 // Development-only debug endpoints
@@ -153,6 +155,13 @@ const ensureBookingColumns = async () => {
     });
     console.log('✅ Added is_active column to services table');
   }
+  if (!servicesTable.image) {
+    await queryInterface.addColumn('services', 'image', {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    });
+    console.log('✅ Added image column to services table');
+  }
 
   // 3c. Check and add columns to promo_codes table
   const promoCodesTable = await queryInterface.describeTable('promo_codes');
@@ -163,6 +172,27 @@ const ensureBookingColumns = async () => {
       allowNull: false,
     });
     console.log('✅ Added is_active column to promo_codes table');
+  }
+  if (!promoCodesTable.is_hot_offer) {
+    await queryInterface.addColumn('promo_codes', 'is_hot_offer', {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    });
+    console.log('✅ Added is_hot_offer column to promo_codes table');
+  }
+  if (!promoCodesTable.description) {
+    await queryInterface.addColumn('promo_codes', 'description', {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    });
+    console.log('✅ Added description column to promo_codes table');
+  }
+
+  // 3d. Ensure add_ons table exists
+  if (!tables.includes('add_ons')) {
+    await sequelize.models.AddOn.sync();
+    console.log('✅ Created add_ons table');
   }
 
   // 4. Check and add columns to bookings table

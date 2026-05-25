@@ -18,7 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _showPassword = false;
-  String _selectedRole = 'customer';
+  // Role selection removed - all registrations are customers
 
   @override
   void dispose() {
@@ -79,9 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 16),
-              // Role Selection
-              _buildRoleSelector(),
-              const SizedBox(height: 16),
+              // Role Selection removed — customers only
               // Password
               _buildPasswordField(),
               const SizedBox(height: 16),
@@ -256,66 +254,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildRoleSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Register as',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildRoleButton('Customer', 'customer'),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildRoleButton('Cleaner', 'cleaner'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoleButton(String label, String role) {
-    final isSelected = _selectedRole == role;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedRole = role;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: AppStyles.paddingMedium),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : AppColors.lightGray,
-          borderRadius:
-              BorderRadius.circular(AppStyles.radiusMedium),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : AppColors.gray,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: isSelected
-                  ? AppColors.white
-                  : AppColors.black,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _handleRegister(BuildContext context) async {
     final authProvider = context.read<AuthProvider>();
 
@@ -341,7 +279,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       phone: _phoneController.text.trim(),
-      role: _selectedRole,
     );
 
     if (success && mounted) {

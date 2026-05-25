@@ -12,6 +12,7 @@ import {
   SettingsOutlined,
   LogoutOutlined
 } from '@mui/icons-material';
+import { Add } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
 const DRAWER_WIDTH = 260;
@@ -26,6 +27,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { text: 'Customers', icon: <PeopleAltOutlined />, path: '/customers' },
     { text: 'Services', icon: <CleaningServicesOutlined />, path: '/services' },
     { text: 'Promo Codes', icon: <ConfirmationNumberOutlined />, path: '/promos' },
+    { text: 'Add-ons', icon: <Add />, path: '/addons' },
     { text: 'Notifications', icon: <NotificationsNoneOutlined />, path: '/notifications' },
     { text: 'Analytics', icon: <BarChartOutlined />, path: '/analytics' },
     { text: 'Settings', icon: <SettingsOutlined />, path: '/settings' },

@@ -7,6 +7,7 @@ const { authMiddleware } = require('../middleware/auth');
  * Promo Code Routes
  */
 
+router.get('/hot-offers', promoController.getHotOffers);
 router.post('/validate', authMiddleware, promoController.validatePromoCode);
 
 module.exports = router;

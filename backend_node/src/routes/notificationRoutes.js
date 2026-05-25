@@ -8,6 +8,12 @@ const { authMiddleware } = require('../middleware/auth');
  */
 
 router.get(
+  '/unread-count',
+  authMiddleware,
+  notificationController.getUnreadCount
+);
+
+router.get(
   '/',
   authMiddleware,
   notificationController.getNotifications

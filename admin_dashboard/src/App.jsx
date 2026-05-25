@@ -11,6 +11,7 @@ import Bookings from './pages/Bookings';
 import Customers from './pages/Customers';
 import Services from './pages/Services';
 import Promos from './pages/Promos';
+import Addons from './pages/Addons';
 import Notifications from './pages/Notifications';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
@@ -37,6 +38,7 @@ function App() {
             <Route path="customers" element={<Customers />} />
             <Route path="services" element={<Services />} />
             <Route path="promos" element={<Promos />} />
+            <Route path="addons" element={<Addons />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />

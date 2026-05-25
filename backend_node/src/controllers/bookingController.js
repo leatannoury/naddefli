@@ -159,6 +159,13 @@ exports.createBooking = async (req, res) => {
       { transaction: t }
     );
 
+    await Notification.create({
+      user_id: req.user.id,
+      title: 'Booking Pending',
+      body: `Your cleaning on ${booking_date} at ${start_time} is pending approval.`,
+      is_read: false,
+    }, { transaction: t });
+
     await t.commit();
 
     sendSuccess(
@@ -332,10 +339,10 @@ exports.completeBooking = async (req, res) => {
       return sendError(res, 'Booking not found', 404);
     }
 
-    // Check if user owns or is assigned to this booking
-    if (booking.user_id !== req.user.id && booking.cleaner_id !== req.user.id && req.user.role !== 'admin') {
+    // Only administrators may mark bookings as completed
+    if (req.user.role !== 'admin') {
       await t.rollback();
-      return sendError(res, 'Unauthorized', 403);
+      return sendError(res, 'Unauthorized - admin only', 403);
     }
 
     if (booking.status === 'completed') {

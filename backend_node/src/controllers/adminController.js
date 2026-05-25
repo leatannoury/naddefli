@@ -36,6 +36,8 @@ const readSettings = () => {
     timezone: 'UTC',
     bookingBufferHours: 2,
     autoConfirmBookings: false
+    ,
+    globalAddOns: []
   };
 };
 
@@ -488,7 +490,19 @@ exports.getAllUsers = async (req, res) => {
       order: [['created_at', 'DESC']],
     });
 
-    sendSuccess(res, users);
+    // Compute bookings_count per user
+    const usersWithCounts = await Promise.all(users.map(async (u) => {
+      const obj = u.toJSON();
+      try {
+        const count = await Booking.count({ where: { user_id: u.id } });
+        obj.bookings_count = count;
+      } catch (err) {
+        obj.bookings_count = 0;
+      }
+      return obj;
+    }));
+
+    sendSuccess(res, usersWithCounts);
   } catch (error) {
     console.error('Get customers error:', error);
     sendError(res, 'Failed to fetch customers', 500, error);
@@ -811,7 +825,7 @@ exports.getAllPromos = async (req, res) => {
 
 exports.createPromo = async (req, res) => {
   try {
-    const { code, type, value, conditions, expires_at, is_active } = req.body;
+    const { code, type, value, description, conditions, expires_at, is_active, is_hot_offer } = req.body;
 
     if (!code || !type || value === undefined) {
       return sendError(res, 'Code, type, and value are required', 400);
@@ -826,9 +840,11 @@ exports.createPromo = async (req, res) => {
       code: code.toUpperCase().trim(),
       type,
       value: parseFloat(value),
+      description: description ? description.toString().trim() : null,
       conditions: conditions ? (typeof conditions === 'object' ? JSON.stringify(conditions) : conditions) : null,
       expires_at: expires_at || null,
       is_active: is_active !== undefined ? !!is_active : true,
+      is_hot_offer: !!is_hot_offer,
     });
 
     sendSuccess(res, promo, 'Promo code created successfully', 201);
@@ -841,19 +857,28 @@ exports.createPromo = async (req, res) => {
 exports.updatePromo = async (req, res) => {
   try {
     const { id } = req.params;
-    const { code, type, value, conditions, expires_at, is_active } = req.body;
+    const { code, type, value, description, conditions, expires_at, is_active } = req.body;
 
     const promo = await PromoCode.findByPk(id);
     if (!promo) {
       return sendError(res, 'Promo code not found', 404);
     }
 
-    if (code !== undefined) promo.code = code.toUpperCase().trim();
+    if (code !== undefined) {
+      const newCode = code.toUpperCase().trim();
+      const existing = await PromoCode.findOne({ where: { code: newCode } });
+      if (existing && existing.id !== promo.id) {
+        return sendError(res, 'Promo code already exists', 400);
+      }
+      promo.code = newCode;
+    }
     if (type !== undefined) promo.type = type;
     if (value !== undefined) promo.value = parseFloat(value);
+    if (description !== undefined) promo.description = description ? description.toString().trim() : null;
     if (conditions !== undefined) promo.conditions = conditions ? (typeof conditions === 'object' ? JSON.stringify(conditions) : conditions) : null;
     if (expires_at !== undefined) promo.expires_at = expires_at || null;
     if (is_active !== undefined) promo.is_active = !!is_active;
+    if (req.body.is_hot_offer !== undefined) promo.is_hot_offer = !!req.body.is_hot_offer;
 
     await promo.save();
 
@@ -893,6 +918,7 @@ exports.getPublicSettings = async (req, res) => {
       supportEmail: settings.supportEmail,
       normalHourlyRate: settings.normalHourlyRate,
       deepHourlyRate: settings.deepHourlyRate,
+      globalAddOns: Array.isArray(settings.globalAddOns) ? settings.globalAddOns : []
     });
   } catch (error) {
     sendError(res, 'Failed to read public settings', 500, error);
@@ -952,6 +978,13 @@ exports.updateSettings = async (req, res) => {
     if (timezone !== undefined) current.timezone = timezone;
     if (autoConfirmBookings !== undefined) current.autoConfirmBookings = !!autoConfirmBookings;
     if (bookingBufferHours !== undefined) current.bookingBufferHours = parseInt(bookingBufferHours, 10);
+    if (req.body.globalAddOns !== undefined) {
+      try {
+        current.globalAddOns = Array.isArray(req.body.globalAddOns) ? req.body.globalAddOns : JSON.parse(req.body.globalAddOns);
+      } catch (err) {
+        current.globalAddOns = [];
+      }
+    }
 
     const success = writeSettings(current);
     if (!success) {

@@ -6,6 +6,9 @@ import '../providers/booking_provider.dart';
 import '../utils/app_styles.dart';
 import '../utils/image_utils.dart';
 import '../services/app_settings_service.dart';
+import '../services/notification_service.dart';
+import '../services/http_service.dart';
+import '../utils/constants.dart';
 
 /// Home Screen
 class HomeScreen extends StatefulWidget {
@@ -27,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'supportPhone': '+961 00 000 000',
     'supportEmail': 'support@naddefli.local',
   };
+  int _unreadNotifications = 0;
 
   final List<Map<String, String>> _heroCards = [
     {
@@ -46,26 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  final List<Map<String, String>> _offerCards = [
-    {
-      'title': '20% OFF Deep Cleaning',
-      'subtitle': 'Save on premium deep cleaning plans.',
-      'tag': 'Hot',
-      'code': 'DEEP20',
-    },
-    {
-      'title': 'First Booking Discount',
-      'subtitle': 'Enjoy a welcome promo on your first order.',
-      'tag': 'New',
-      'code': 'FIRST10',
-    },
-    {
-      'title': 'Free Window Add-on',
-      'subtitle': 'Add windows cleaning to any service.',
-      'tag': 'Free',
-      'code': 'WINDOWFREE',
-    },
-  ];
+  List<Map<String, String>> _offerCards = [];
 
   @override
   void initState() {
@@ -76,7 +61,39 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadServices();
       _loadBookings();
       _loadAppSettings();
+      _loadUnreadNotifications();
+      _loadHotOffers();
     });
+  }
+
+  Future<void> _loadHotOffers() async {
+    try {
+      final response = await HttpService.get('${ApiEndpoints.baseOrigin}/api/promo/hot-offers');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> data = response.data['data'] ?? [];
+        final List<Map<String, String>> offers = [];
+        for (var item in data) {
+          offers.add({
+            'title': (item['description'] ?? '${item['value']}${item['type'] == 'percentage' ? '%' : '\$'} OFF').toString(),
+            'subtitle': 'Use code ${item['code']} for ${item['type'] == 'percentage' ? 'a ${item['value']}% discount' : 'a \$${item['value']} discount'}.',
+            'tag': 'Hot',
+            'code': item['code'].toString(),
+          });
+        }
+        if (mounted) {
+          setState(() {
+            _offerCards = offers;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load hot offers: $e');
+    }
+  }
+
+  Future<void> _loadUnreadNotifications() async {
+    final count = await NotificationService.fetchUnreadCount();
+    if (mounted) setState(() => _unreadNotifications = count);
   }
 
   Future<void> _loadAppSettings() async {
@@ -188,8 +205,15 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications, color: AppColors.primary),
-            onPressed: () {},
+            icon: Badge(
+              isLabelVisible: _unreadNotifications > 0,
+              label: Text('$_unreadNotifications'),
+              child: const Icon(Icons.notifications, color: AppColors.primary),
+            ),
+            onPressed: () async {
+              await Navigator.of(context).pushNamed('/notifications');
+              if (mounted) _loadUnreadNotifications();
+            },
           ),
         ],
       ),
@@ -594,12 +618,18 @@ class _HomeScreenState extends State<HomeScreen> {
             style: AppStyles.headlineSmall,
           ),
           const SizedBox(height: AppStyles.paddingSmall),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(
-                _offerCards.length,
-                (index) {
+          if (_offerCards.isEmpty)
+            Text(
+              'No hot offers currently available.',
+              style: AppStyles.bodyMedium.copyWith(color: AppColors.onSurfaceVariant),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(
+                  _offerCards.length,
+                  (index) {
                   final offer = _offerCards[index];
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
@@ -1309,12 +1339,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildProfileOption(
                         icon: Icons.help_outline,
                         title: 'Help & Support',
-                        onTap: () => _showInfoSheet(
-                          title: 'Help & Support',
-                          icon: Icons.help_outline,
-                          message:
-                              'For help, message ${_appSettings['supportEmail'] ?? 'support@naddefli.local'} or call ${_appSettings['supportPhone'] ?? '+961 00 000 000'}.',
-                        ),
+                        onTap: () async {
+                          await _loadAppSettings();
+                          if (!mounted) return;
+                          _showInfoSheet(
+                            title: 'Help & Support',
+                            icon: Icons.help_outline,
+                            message:
+                                'Email: ${_appSettings['supportEmail']}\nPhone: ${_appSettings['supportPhone']}',
+                          );
+                        },
                       ),
                       _buildProfileOption(
                         icon: Icons.info_outline,
@@ -1431,8 +1465,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your phone number.';
                     }
-                    if (!RegExp(r'^\+?[0-9]{7,15}\$').hasMatch(value.trim())) {
-                      return 'Enter a valid phone number.';
+                    final digits = value.trim().replaceAll(RegExp(r'[\s\-()]'), '');
+                    if (!RegExp(r'^\+?[0-9]{8,15}$').hasMatch(digits)) {
+                      return 'Enter a valid phone number (e.g. +96170123456).';
                     }
                     return null;
                   },
@@ -1450,13 +1485,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (!_formKey.currentState!.validate()) {
                         return;
                       }
+                      final messenger = ScaffoldMessenger.of(context);
                       final success = await context.read<AuthProvider>().updateProfile(
                             fullName: nameController.text.trim(),
-                            phone: phoneController.text.trim(),
+                            phone: phoneController.text.trim().replaceAll(RegExp(r'[\s\-()]'), ''),
                           );
-                      if (!mounted) return;
+                      if (!sheetContext.mounted) return;
                       Navigator.pop(sheetContext);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
                           content: Text(success
                               ? 'Profile updated successfully'
@@ -1475,11 +1511,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    ).whenComplete(() {
-      nameController.dispose();
-      phoneController.dispose();
-      emailController.dispose();
-    });
+    );
   }
 
   void _showInfoSheet({

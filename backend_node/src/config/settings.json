@@ -1,0 +1,15 @@
+{
+  "businessName": "Naddefli Cleaning Services",
+  "supportPhone": "+96170123456",
+  "supportEmail": "support@naddefli.com",
+  "normalHourlyRate": 4,
+  "deepHourlyRate": 6,
+  "currency": "USD",
+  "timezone": "UTC",
+  "bookingBufferHours": 2,
+  "autoConfirmBookings": false,
+  "globalAddOns": {
+    "name": "Extra Mirror",
+    "price": 5
+  }
+}

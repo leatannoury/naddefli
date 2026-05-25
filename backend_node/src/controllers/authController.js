@@ -14,7 +14,7 @@ const sequelize = require('../config/db');
 exports.register = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { full_name, email, phone, password, role } = req.body;
+    const { full_name, email, phone, password } = req.body;
 
     // Validate input
     if (!full_name || !email || !password) {
@@ -31,27 +31,17 @@ exports.register = async (req, res) => {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Create user
+    // Create user (registrations always create customers)
     const user = await User.create(
       {
         full_name,
         email,
         phone,
         password: hashedPassword,
-        role: role || 'customer',
+        role: 'customer',
       },
       { transaction: t }
     );
-
-    // If role is cleaner, create cleaner profile
-    if (role === 'cleaner') {
-      await Cleaner.create(
-        {
-          user_id: user.id,
-        },
-        { transaction: t }
-      );
-    }
 
     await t.commit();
 

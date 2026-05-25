@@ -81,17 +81,21 @@ const calculatePrice = (options = {}) => {
 
   // Add-ons dictionary
   const ADDON_PRICES = {
-    'windows cleaning': 10.0,
-    'inside windows': 10.0,
-    'oven cleaning': 8.0,
-    'inside oven': 8.0,
-    'fridge cleaning': 8.0,
-    'inside fridge': 8.0,
-    'balcony cleaning': 6.0,
-    'balcony': 6.0,
-    'inside cabinets': 5.0,
-    'laundry folding': 7.0,
-    'ironing': 7.0,
+    'inside windows cleaning': 5.0,
+    'inside windows': 5.0,
+    'windows cleaning': 5.0,
+    'oven cleaning': 4.0,
+    'inside oven': 4.0,
+    'fridge cleaning': 4.0,
+    'inside fridge': 4.0,
+    'balcony cleaning': 3.0,
+    'balcony': 3.0,
+    'sofa cleaning': 8.0,
+    'carpet cleaning': 6.0,
+    'pet hair cleaning': 5.0,
+    'eco-friendly products': 2.0,
+    'eco-products': 2.0,
+    'ironing': 5.0,
   };
 
   let addOnsPrice = 0.0;
@@ -115,19 +119,12 @@ const calculatePrice = (options = {}) => {
     }
     // Default fallback price for other extras
     if (!matched) {
-      addOnsPrice += 15.0;
+      addOnsPrice += 0;
     }
   });
 
-  let customRoomsPrice = 0.0;
-  if (is_custom) {
-    // Custom property room rates
-    customRoomsPrice += (parseInt(room_count, 10) || 0) * 20.0;
-    customRoomsPrice += (parseInt(bathrooms_count, 10) || 0) * 30.0;
-    customRoomsPrice += (parseInt(kitchens_count, 10) || 0) * 40.0;
-  }
-
-  let finalPrice = baseCleaningPrice + addOnsPrice + customRoomsPrice;
+  // Room counts are informational only — no price impact
+  let finalPrice = baseCleaningPrice + addOnsPrice;
 
   // Add 20% surcharge for urgent same-day bookings (less than 24h)
   if (isUrgent) {

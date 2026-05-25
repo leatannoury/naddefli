@@ -62,6 +62,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
           // Surcharges / Extras calculation
           final baseInvoiceTotal = booking.totalPrice + booking.discountAmount;
           
+          final authProvider = Provider.of<AuthProvider>(context);
+
           return RefreshIndicator(
             onRefresh: () => provider.fetchBookingById(bookingId),
             color: const Color(0xFF0D9488),
@@ -330,8 +332,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                       const SizedBox(height: 12),
                     ],
 
-                    // Mark as Completed button for customers to finish past actions or live actions
-                    ElevatedButton.icon(
+                    // Mark as Completed (admin only)
+                    if (authProvider.user?.role == 'admin') ElevatedButton.icon(
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,

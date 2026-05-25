@@ -1,4 +1,5 @@
 /// Service Model
+import 'dart:convert';
 class Service {
   final String id;
   final String name;
@@ -8,6 +9,7 @@ class Service {
   final String? image;
   final String? imageUrl;
   final DateTime? createdAt;
+  final List<Map<String, dynamic>> addOns;
 
   Service({
     required this.id,
@@ -18,6 +20,7 @@ class Service {
     this.image,
     this.imageUrl,
     this.createdAt,
+    this.addOns = const [],
   });
 
   /// Factory constructor for JSON deserialization
@@ -33,6 +36,19 @@ class Service {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
+      addOns: (() {
+        try {
+          final raw = json['add_ons'];
+          if (raw == null) return <Map<String, dynamic>>[];
+          if (raw is String) {
+            if (raw.trim().isEmpty) return <Map<String, dynamic>>[];
+            final parsed = jsonDecode(raw) as List;
+            return parsed.map((e) => e is Map ? Map<String, dynamic>.from(e) : {'name': e.toString(), 'price': 0}).toList();
+          }
+          if (raw is List) return raw.map((e) => e is Map ? Map<String, dynamic>.from(e) : {'name': e.toString(), 'price': 0}).toList();
+        } catch (_) {}
+        return <Map<String, dynamic>>[];
+      })(),
     );
   }
 
@@ -46,6 +62,7 @@ class Service {
       'duration_hours': durationHours,
       'image': image,
       'image_url': imageUrl,
+      'add_ons': addOns,
       'created_at': createdAt?.toIso8601String(),
     };
   }

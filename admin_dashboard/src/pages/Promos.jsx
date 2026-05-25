@@ -68,6 +68,8 @@ const Promos = () => {
   const [formConditions, setFormConditions] = useState('');
   const [formExpiresAt, setFormExpiresAt] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formIsHotOffer, setFormIsHotOffer] = useState(false);
+  const [formDescription, setFormDescription] = useState('');
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -105,6 +107,8 @@ const Promos = () => {
     setFormConditions('');
     setFormExpiresAt('');
     setFormIsActive(true);
+    setFormIsHotOffer(false);
+    setFormDescription('');
     setSelectedPromo(null);
   };
 
@@ -122,6 +126,8 @@ const Promos = () => {
     setFormConditions(promo.conditions || '');
     setFormExpiresAt(promo.expires_at ? promo.expires_at.split('T')[0] : '');
     setFormIsActive(promo.is_active !== false);
+    setFormIsHotOffer(promo.is_hot_offer === true);
+    setFormDescription(promo.description || '');
     setIsEditMode(true);
     setDialogOpen(true);
   };
@@ -146,9 +152,11 @@ const Promos = () => {
       code,
       type: formType,
       value: valueNum,
+      description: formDescription,
       conditions: formConditions || null,
       expires_at: formExpiresAt ? new Date(formExpiresAt).toISOString() : null,
-      is_active: formIsActive
+      is_active: formIsActive,
+      is_hot_offer: formIsHotOffer,
     };
 
     try {
@@ -363,6 +371,7 @@ const Promos = () => {
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Conditions</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#697386' }}>Hot Offer</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600, color: '#697386', pr: 3 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -430,6 +439,13 @@ const Promos = () => {
                           componentsProps={{ typography: { fontSize: '0.85rem', fontWeight: 600, color: '#697386' } }}
                         />
                       </TableCell>
+                      <TableCell>
+                        {row.is_hot_offer ? (
+                          <Chip label="Hot" size="small" sx={{ bgcolor: '#fff7ed', color: '#ff8a00', fontWeight: 700 }} />
+                        ) : (
+                          <Chip label="-" size="small" sx={{ bgcolor: '#f3f4f6', color: '#9aa4b2' }} />
+                        )}
+                      </TableCell>
                       <TableCell align="right" sx={{ pr: 3 }} onClick={(e) => e.stopPropagation()}>
                         <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                           <IconButton size="small" onClick={() => handleOpenEdit(row)} sx={{ color: '#0A2540', '&:hover': { bgcolor: '#f6f9fc' } }}>
@@ -473,7 +489,6 @@ const Promos = () => {
               value={formCode}
               onChange={(e) => setFormCode(e.target.value.toUpperCase())}
               placeholder="e.g. SUMMER50"
-              disabled={isEditMode}
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
             />
 
@@ -558,6 +573,32 @@ const Promos = () => {
               label="Make active immediately"
               componentsProps={{ typography: { fontWeight: 600, color: '#424e5e' } }}
             />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formIsHotOffer}
+                  onChange={(e) => setFormIsHotOffer(e.target.checked)}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': { color: '#ff8a00' },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#ff8a00' }
+                  }}
+                />
+              }
+              label="Mark as Hot Offer"
+              componentsProps={{ typography: { fontWeight: 600, color: '#424e5e' } }}
+            />
+            {formIsHotOffer && (
+              <TextField
+                label="Offer Description"
+                fullWidth
+                multiline
+                rows={2}
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                placeholder="Short description for the hot offer card"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1.5 }}>

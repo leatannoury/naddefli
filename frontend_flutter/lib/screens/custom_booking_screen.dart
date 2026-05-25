@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/booking_provider.dart';
@@ -6,7 +7,8 @@ import '../providers/service_provider.dart';
 import '../providers/address_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/address.dart';
-import '../utils/app_styles.dart';
+import '../utils/pricing.dart';
+import '../services/app_settings_service.dart';
 
 class CustomBookingScreen extends StatefulWidget {
   const CustomBookingScreen({Key? key}) : super(key: key);
@@ -27,14 +29,8 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   int _kitchenCount = 1;
   String _cleaningType = 'normal'; // normal, deep
 
-  final Map<String, bool> _extras = {
-    'Pet-friendly': false,
-    'Inside Windows': false,
-    'Inside Fridge': false,
-    'Inside Oven': false,
-    'Balcony': false,
-    'Eco-products': false,
-  };
+  Map<String, bool> _extras = {};
+  final Map<String, double> _addOnPrices = {};
 
   // Saved Address variables
   Address? _selectedAddress;
@@ -53,17 +49,37 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   bool _redeemLoyaltyPoints = false;
   String? _promoMessage;
 
-  final List<String> _timeSlots = [
-    "08:00", "09:00", "10:00", "11:00", "12:00",
-    "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
-  ];
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AddressProvider>(context, listen: false).fetchAddresses().then((_) {
-        final addresses = Provider.of<AddressProvider>(context, listen: false).addresses;
+      AppSettingsService.getPublicAddOns(forceRefresh: true).then((addons) {
+        final Map<String, bool> extrasMap = {};
+        final Map<String, double> pricesMap = {};
+
+        for (final addon in addons) {
+          final name =
+              (addon['name'] ?? addon['title'] ?? '').toString().trim();
+          final price =
+              double.tryParse((addon['price'] ?? '').toString()) ?? 0.0;
+          if (name.isEmpty) continue;
+          extrasMap.putIfAbsent(name, () => false);
+          pricesMap[name] = price;
+        }
+
+        if (mounted) {
+          setState(() {
+            _extras = extrasMap;
+            _addOnPrices.clear();
+            _addOnPrices.addAll(pricesMap);
+          });
+        }
+      });
+      Provider.of<AddressProvider>(context, listen: false)
+          .fetchAddresses()
+          .then((_) {
+        final addresses =
+            Provider.of<AddressProvider>(context, listen: false).addresses;
         if (addresses.isNotEmpty) {
           setState(() {
             _selectedAddress = addresses.first;
@@ -111,21 +127,16 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   }
 
   double _calculateSubtotal() {
-    // Custom Cleaning Estimate base: $4/hr or $6/hr base * duration
-    final hourlyRate = _cleaningType == 'deep' ? 6.0 : 4.0;
-    double baseTotal = _redeemLoyaltyPoints ? 0.0 : (hourlyRate * _durationHours);
-
-    // Add rooms count rates
-    baseTotal += (_roomCount * 20.0);
-    baseTotal += (_bathroomCount * 30.0);
-    baseTotal += (_kitchenCount * 40.0);
-
-    // Add extras (each selected extra is $15)
-    _extras.forEach((key, value) {
-      if (value) baseTotal += 15.0;
-    });
-
-    return baseTotal;
+    final selectedAddons =
+        _extras.entries.where((e) => e.value).map((e) => e.key);
+    final base = _redeemLoyaltyPoints
+        ? 0.0
+        : Pricing.hourlyRate(_cleaningType) * _durationHours;
+    double addonsTotal = 0.0;
+    for (final k in selectedAddons) {
+      addonsTotal += _addOnPrices[k] ?? 0.0;
+    }
+    return base + addonsTotal;
   }
 
   double _calculateTotal() {
@@ -150,7 +161,8 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     final provider = Provider.of<BookingProvider>(context, listen: false);
     final subtotal = _calculateSubtotal();
 
-    final selectedExtrasList = _extras.entries.where((e) => e.value).map((e) => e.key).toList();
+    final selectedExtrasList =
+        _extras.entries.where((e) => e.value).map((e) => e.key).toList();
 
     final result = await provider.validatePromoCode(
       code: code,
@@ -163,11 +175,15 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     if (result['success']) {
       setState(() {
         _appliedPromoCode = code;
-        _discountAmount = double.tryParse(result['data']['discount_amount']?.toString() ?? '0.0') ?? 0.0;
+        _discountAmount = double.tryParse(
+                result['data']['discount_amount']?.toString() ?? '0.0') ??
+            0.0;
         _promoMessage = result['data']['message'] ?? 'Promo applied!';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_promoMessage!), backgroundColor: const Color(0xFF0D9488)),
+        SnackBar(
+            content: Text(_promoMessage!),
+            backgroundColor: const Color(0xFF0D9488)),
       );
     } else {
       setState(() {
@@ -176,7 +192,9 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
         _promoMessage = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Invalid promo code'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text(result['message'] ?? 'Invalid promo code'),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -192,7 +210,11 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
-        title: const Text('Custom Booking Service', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Book a Cleaning',
+            style: TextStyle(
+                color: Color(0xFF1E293B),
+                fontWeight: FontWeight.bold,
+                fontSize: 18)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -212,7 +234,10 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x240D9488), blurRadius: 12, offset: Offset(0, 4))
+                    BoxShadow(
+                        color: Color(0x240D9488),
+                        blurRadius: 12,
+                        offset: Offset(0, 4))
                   ],
                 ),
                 child: Column(
@@ -224,7 +249,8 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                         Expanded(
                           child: Row(
                             children: [
-                              const Icon(Icons.stars, color: Colors.amber, size: 24),
+                              const Icon(Icons.stars,
+                                  color: Colors.amber, size: 24),
                               const SizedBox(width: 8),
                               const Expanded(
                                 child: Text(
@@ -243,12 +269,17 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                         if (userPoints >= 5)
                           Row(
                             children: [
-                              const Text('Redeem', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12.5)),
+                              const Text('Redeem',
+                                  style: TextStyle(
+                                      color: Colors.amber,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5)),
                               Checkbox(
                                 value: _redeemLoyaltyPoints,
                                 activeColor: Colors.amber,
                                 checkColor: Colors.white,
-                                side: const BorderSide(color: Colors.white, width: 2),
+                                side: const BorderSide(
+                                    color: Colors.white, width: 2),
                                 onChanged: (val) {
                                   setState(() {
                                     _redeemLoyaltyPoints = val ?? false;
@@ -259,14 +290,18 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                           )
                         else
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
                               'Total: $userPoints pts',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12),
                             ),
                           )
                       ],
@@ -285,12 +320,14 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: isCompleted 
-                                    ? Colors.amber 
+                                color: isCompleted
+                                    ? Colors.amber
                                     : Colors.white.withOpacity(0.15),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isCompleted ? Colors.amber : Colors.white38,
+                                  color: isCompleted
+                                      ? Colors.amber
+                                      : Colors.white38,
                                   width: 2,
                                 ),
                               ),
@@ -298,11 +335,14 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                 child: isGift
                                     ? Icon(
                                         Icons.card_giftcard,
-                                        color: isCompleted ? Colors.white : Colors.white70,
+                                        color: isCompleted
+                                            ? Colors.white
+                                            : Colors.white70,
                                         size: 20,
                                       )
                                     : (isCompleted
-                                        ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                        ? const Icon(Icons.check,
+                                            color: Colors.white, size: 20)
                                         : Text(
                                             '${index + 1}',
                                             style: const TextStyle(
@@ -317,9 +357,12 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             Text(
                               isGift ? 'Reward' : 'Clean ${index + 1}',
                               style: TextStyle(
-                                color: isCompleted ? Colors.amber : Colors.white70,
+                                color:
+                                    isCompleted ? Colors.amber : Colors.white70,
                                 fontSize: 10,
-                                fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isCompleted
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
                           ],
@@ -328,53 +371,82 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      userPoints >= 5 
-                          ? '🎉 You unlocked a FREE standard hourly base clean!' 
+                      userPoints >= 5
+                          ? '🎉 You unlocked a FREE standard hourly base clean!'
                           : 'Complete ${5 - (userPoints % 5)} more standard booking(s) to unlock milestone 5!',
-                      style: const TextStyle(color: Color(0xFFCCFBF1), fontSize: 11.5, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                          color: Color(0xFFCCFBF1),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
 
-            // Step 1: Property Info
+            // Step 1: Cleaning type
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('1. Property Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                    const Text('1. Cleaning type',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1E293B))),
+                    const SizedBox(height: 8),
+                    const Text('Normal \$4/hr · Deep \$6/hr',
+                        style:
+                            TextStyle(color: Color(0xFF64748B), fontSize: 12)),
                     const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                        children: [
-                          Expanded(child: _buildSegmentItem('House/Apartment')),
-                          Expanded(child: _buildSegmentItem('Room Only')),
-                        ],
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('Normal'),
+                            selected: _cleaningType == 'normal',
+                            onSelected: (_) =>
+                                setState(() => _cleaningType = 'normal'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('Deep'),
+                            selected: _cleaningType == 'deep',
+                            onSelected: (_) =>
+                                setState(() => _cleaningType = 'deep'),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildPropertyCounters(),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Step 2: Timings
+            // Note: duration and focus areas removed; using advanced timing below
+
+            // Step 3: Timings
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('2. Advanced Timing selection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                    const Text('Select Time',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1E293B))),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -386,8 +458,16 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Date', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                Text(DateFormat('EEEE, MMM d, yyyy').format(_selectedDate), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                const Text('Date',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF64748B))),
+                                Text(
+                                    DateFormat('EEEE, MMM d, yyyy')
+                                        .format(_selectedDate),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15)),
                               ],
                             ),
                           ),
@@ -402,14 +482,22 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             onTap: () => _pickTimeSlot(true),
                             child: Row(
                               children: [
-                                const Icon(Icons.login, color: Color(0xFF0D9488)),
+                                const Icon(Icons.login,
+                                    color: Color(0xFF0D9488)),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Start Hour', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                                      Text(_startTime, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                      const Text('Start Hour',
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF64748B))),
+                                      Text(_startTime,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15)),
                                     ],
                                   ),
                                 ),
@@ -417,21 +505,32 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             ),
                           ),
                         ),
-                        Container(width: 1, height: 40, color: const Color(0xFFE2E8F0)),
+                        Container(
+                            width: 1,
+                            height: 40,
+                            color: const Color(0xFFE2E8F0)),
                         Expanded(
                           child: InkWell(
                             onTap: () => _pickTimeSlot(false),
                             child: Row(
                               children: [
                                 const SizedBox(width: 16),
-                                const Icon(Icons.logout, color: Color(0xFFE11D48)),
+                                const Icon(Icons.logout,
+                                    color: Color(0xFFE11D48)),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const Text('End Hour', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                                      Text(_endTime, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                      const Text('End Hour',
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF64748B))),
+                                      Text(_endTime,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15)),
                                     ],
                                   ),
                                 ),
@@ -444,12 +543,20 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: const Color(0xFFF0FDFA), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDFA),
+                          borderRadius: BorderRadius.circular(10)),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Duration:', style: TextStyle(color: Color(0xFF0D9488), fontWeight: FontWeight.bold)),
-                          Text('${_durationHours.toStringAsFixed(1)} Hours', style: const TextStyle(color: Color(0xFF0F766E), fontWeight: FontWeight.bold)),
+                          const Text('Duration:',
+                              style: TextStyle(
+                                  color: Color(0xFF0D9488),
+                                  fontWeight: FontWeight.bold)),
+                          Text('${_durationHours.toStringAsFixed(1)} Hours',
+                              style: const TextStyle(
+                                  color: Color(0xFF0F766E),
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -459,38 +566,25 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Step 3: Cleaning Type & Extras
+            // Paid add-ons
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('3. Service Upgrades', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                    const Text('4. Paid add-ons',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1E293B))),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Text('Normal cleaning'),
-                            selected: _cleaningType == 'normal',
-                            onSelected: (val) => setState(() => _cleaningType = 'normal'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Text('Deep cleaning'),
-                            selected: _cleaningType == 'deep',
-                            onSelected: (val) => setState(() => _cleaningType = 'deep'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Optional extras:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Text('Tap to add extras:',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 12),
                     Column(
                       children: _extras.keys.map((key) {
@@ -504,12 +598,17 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFF0FDFA) : Colors.white,
+                              color: isSelected
+                                  ? const Color(0xFFF0FDFA)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isSelected ? const Color(0xFF0D9488) : const Color(0xFFE2E8F0),
+                                color: isSelected
+                                    ? const Color(0xFF0D9488)
+                                    : const Color(0xFFE2E8F0),
                                 width: isSelected ? 2.0 : 1.0,
                               ),
                             ),
@@ -519,15 +618,20 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                   width: 24,
                                   height: 24,
                                   decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFF0D9488) : Colors.transparent,
+                                    color: isSelected
+                                        ? const Color(0xFF0D9488)
+                                        : Colors.transparent,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: isSelected ? const Color(0xFF0D9488) : const Color(0xFFCBD5E1),
+                                      color: isSelected
+                                          ? const Color(0xFF0D9488)
+                                          : const Color(0xFFCBD5E1),
                                       width: 2,
                                     ),
                                   ),
                                   child: isSelected
-                                      ? const Icon(Icons.check, color: Colors.white, size: 14)
+                                      ? const Icon(Icons.check,
+                                          color: Colors.white, size: 14)
                                       : null,
                                 ),
                                 const SizedBox(width: 14),
@@ -536,20 +640,25 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                     key,
                                     style: TextStyle(
                                       fontSize: 14.5,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
                                       color: const Color(0xFF1E293B),
                                     ),
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFFCCFBF1) : const Color(0xFFF1F5F9),
+                                    color: isSelected
+                                        ? const Color(0xFFCCFBF1)
+                                        : const Color(0xFFF1F5F9),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Text(
-                                    r'+$15.00',
-                                    style: TextStyle(
+                                  child: Text(
+                                    '+\$${(_addOnPrices[key] ?? 0.0).toStringAsFixed(2)}',
+                                    style: const TextStyle(
                                       color: Color(0xFF0F766E),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12.5,
@@ -571,13 +680,18 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
             // Step 4: Addresses
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('4. Location details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                    const Text('4. Location details',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1E293B))),
                     const SizedBox(height: 12),
                     Consumer<AddressProvider>(
                       builder: (context, addrProvider, _) {
@@ -590,22 +704,33 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                     value: true,
                                     groupValue: _useSavedAddress,
                                     activeColor: const Color(0xFF0D9488),
-                                    onChanged: (val) => setState(() => _useSavedAddress = true),
+                                    onChanged: (val) =>
+                                        setState(() => _useSavedAddress = true),
                                   ),
-                                  const Text('Use Saved Address', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  const Text('Use Saved Address',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               if (_useSavedAddress)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  decoration: BoxDecoration(border: Border.all(color: const Color(0xFFCBD5E1)), borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: const Color(0xFFCBD5E1)),
+                                      borderRadius: BorderRadius.circular(12)),
                                   child: DropdownButtonHideUnderline(
                                     child: DropdownButton<Address>(
                                       value: _selectedAddress,
                                       isExpanded: true,
-                                      onChanged: (Address? val) => setState(() => _selectedAddress = val),
+                                      onChanged: (Address? val) => setState(
+                                          () => _selectedAddress = val),
                                       items: addrProvider.addresses.map((a) {
-                                        return DropdownMenuItem(value: a, child: Text('${a.label}: ${a.address}, ${a.city}'));
+                                        return DropdownMenuItem(
+                                            value: a,
+                                            child: Text(
+                                                '${a.label}: ${a.address}, ${a.city}'));
                                       }).toList(),
                                     ),
                                   ),
@@ -616,9 +741,12 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                     value: false,
                                     groupValue: _useSavedAddress,
                                     activeColor: const Color(0xFF0D9488),
-                                    onChanged: (val) => setState(() => _useSavedAddress = false),
+                                    onChanged: (val) => setState(
+                                        () => _useSavedAddress = false),
                                   ),
-                                  const Text('Enter Custom Address', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  const Text('Enter Custom Address',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ],
@@ -627,21 +755,24 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                         return const SizedBox.shrink();
                       },
                     ),
-
                     if (!_useSavedAddress) ...[
                       const SizedBox(height: 12),
-                      _buildTextField('Address*', _addressController, Icons.location_on),
+                      _buildTextField(
+                          'Address*', _addressController, Icons.location_on),
                       const SizedBox(height: 12),
-                      _buildTextField('City*', _cityController, Icons.location_city),
+                      _buildTextField(
+                          'City*', _cityController, Icons.location_city),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Checkbox(
                             value: _saveNewAddress,
                             activeColor: const Color(0xFF0D9488),
-                            onChanged: (val) => setState(() => _saveNewAddress = val ?? false),
+                            onChanged: (val) =>
+                                setState(() => _saveNewAddress = val ?? false),
                           ),
-                          const Text('Save this address to profile', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text('Save this address to profile',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                       if (_saveNewAddress)
@@ -653,14 +784,17 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                               child: ChoiceChip(
                                 label: Text(lbl),
                                 selected: isSel,
-                                onSelected: (val) => setState(() => _customAddressLabel = lbl),
+                                onSelected: (val) =>
+                                    setState(() => _customAddressLabel = lbl),
                               ),
                             );
                           }).toList(),
                         ),
                     ],
                     const SizedBox(height: 12),
-                    _buildTextField('Special Instructions / Notes', _notesController, Icons.note, maxLines: 2),
+                    _buildTextField('Special Instructions / Notes',
+                        _notesController, Icons.note,
+                        maxLines: 2),
                   ],
                 ),
               ),
@@ -670,13 +804,18 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
             // Coupon Code Validation Card
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('5. Apply Promo Code', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                    const Text('5. Apply Promo Code',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1E293B))),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -685,8 +824,10 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             controller: _promoController,
                             decoration: InputDecoration(
                               hintText: 'Enter coupon (e.g. DEEP20, FIRST10)',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 14),
                             ),
                           ),
                         ),
@@ -695,18 +836,45 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                           onPressed: _applyPromoCode,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E293B),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: const Text('Apply',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                     if (_appliedPromoCode != null) ...[
                       const SizedBox(height: 8),
-                      Text(
-                        'Coupon $_appliedPromoCode applied successfully (-\$${_discountAmount.toStringAsFixed(2)})!',
-                        style: const TextStyle(color: Color(0xFF0D9488), fontWeight: FontWeight.bold, fontSize: 13),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Coupon $_appliedPromoCode applied successfully (-\$${_discountAmount.toStringAsFixed(2)})!',
+                              style: const TextStyle(
+                                  color: Color(0xFF0D9488),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _appliedPromoCode = null;
+                                _discountAmount = 0.0;
+                                _promoController.clear();
+                              });
+                            },
+                            icon: const Icon(Icons.close,
+                                color: Color(0xFF0D9488)),
+                            tooltip: 'Remove promo',
+                          )
+                        ],
                       ),
                     ]
                   ],
@@ -718,36 +886,48 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
             // Receipts / Breakdown Invoicing Card
             Card(
               elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Invoice Summary Breakdown', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                    const Text('Invoice Summary Breakdown',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1E293B))),
                     const SizedBox(height: 16),
                     _buildInvoiceRow(
                       'Base cleaning rate (${_cleaningType == "deep" ? "\$6/hr" : "\$4/hr"} x ${_durationHours.toStringAsFixed(1)}h)',
                       '\$${(_redeemLoyaltyPoints ? 0.0 : (_cleaningType == "deep" ? 6.0 : 4.0) * _durationHours).toStringAsFixed(2)}',
                     ),
-                    _buildInvoiceRow('Living rooms / bedrooms count rate', '\$${(_roomCount * 20.0).toStringAsFixed(2)}'),
-                    _buildInvoiceRow('Bathrooms count rate', '\$${(_bathroomCount * 30.0).toStringAsFixed(2)}'),
-                    _buildInvoiceRow('Kitchens count rate', '\$${(_kitchenCount * 40.0).toStringAsFixed(2)}'),
-                    if (_extras.entries.any((e) => e.value)) ...[
-                      _buildInvoiceRow(
-                        'Extras upgrades sum',
-                        '\$${(_extras.entries.where((e) => e.value).length * 15.0).toStringAsFixed(2)}',
-                      ),
-                    ],
+                    ..._extras.entries
+                        .where((e) => e.value)
+                        .map((e) => _buildInvoiceRow(
+                              e.key,
+                              '+\$${(_addOnPrices[e.key] ?? 0.0).toStringAsFixed(2)}',
+                            )),
                     if (_discountAmount > 0) ...[
-                      _buildInvoiceRow('Promo coupon discount', '-\$${_discountAmount.toStringAsFixed(2)}', isDiscount: true),
+                      _buildInvoiceRow('Promo coupon discount',
+                          '-\$${_discountAmount.toStringAsFixed(2)}',
+                          isDiscount: true),
                     ],
                     const Divider(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total Final Price', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
-                        Text('\$${_calculateTotal().toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF0D9488))),
+                        const Text('Total Final Price',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xFF1E293B))),
+                        Text('\$${_calculateTotal().toStringAsFixed(2)}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: Color(0xFF0D9488))),
                       ],
                     ),
                   ],
@@ -766,11 +946,16 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0D9488),
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                     ),
                     child: provider.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Confirm Cleaning Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        : const Text('Confirm Cleaning Request',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                   ),
                 );
               },
@@ -781,17 +966,25 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     );
   }
 
-  Widget _buildInvoiceRow(String label, String value, {bool isDiscount = false}) {
+  Widget _buildInvoiceRow(String label, String value,
+      {bool isDiscount = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isDiscount ? Colors.red : const Color(0xFF1E293B), fontSize: 13)),
+        Text(label,
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        Text(value,
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDiscount ? Colors.red : const Color(0xFF1E293B),
+                fontSize: 13)),
       ],
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {int maxLines = 1}) {
+  Widget _buildTextField(
+      String label, TextEditingController controller, IconData icon,
+      {int maxLines = 1}) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -799,100 +992,6 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF0D9488)),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  Widget _buildSegmentItem(String type) {
-    bool isSelected = _propertyType == type;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _propertyType = type;
-          if (type == 'Room Only') {
-            _bathroomCount = 0;
-            _kitchenCount = 0;
-            if (_roomCount == 0) _roomCount = 1;
-          } else {
-            if (_bathroomCount == 0) _bathroomCount = 1;
-            if (_kitchenCount == 0) _kitchenCount = 1;
-          }
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0D9488) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Text(
-            type,
-            style: TextStyle(
-              color: isSelected ? Colors.white : const Color(0xFF475569),
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPropertyCounters() {
-    final isRoomOnly = _propertyType == 'Room Only';
-
-    return Column(
-      children: [
-        _buildCounter(
-          isRoomOnly ? 'Rooms to clean' : 'Living Rooms / Bedrooms',
-          _roomCount,
-          (val) => setState(() => _roomCount = val.clamp(1, 12).toInt()),
-        ),
-        if (!isRoomOnly) ...[
-          _buildCounter(
-            'Bathrooms',
-            _bathroomCount,
-            (val) => setState(() => _bathroomCount = val.clamp(0, 8).toInt()),
-          ),
-          _buildCounter(
-            'Kitchens',
-            _kitchenCount,
-            (val) => setState(() => _kitchenCount = val.clamp(0, 3).toInt()),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildCounter(String label, int value, Function(int) onChanged) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF1E293B)),
-            ),
-          ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: value > 0 ? () => onChanged(value - 1) : null,
-                icon: const Icon(Icons.remove_circle_outline, color: Color(0xFF0D9488)),
-              ),
-              SizedBox(
-                width: 30,
-                child: Center(child: Text('$value', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-              ),
-              IconButton(
-                onPressed: () => onChanged(value + 1),
-                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF0D9488)),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -910,52 +1009,116 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   }
 
   Future<void> _pickTimeSlot(bool isStart) async {
+    final hours = List<int>.generate(12, (i) => i + 1);
+    final minutes = [0, 15, 30, 45];
+    final ampm = ['AM', 'PM'];
+
+    String current = isStart ? _startTime : _endTime;
+    int curH = 0, curM = 0;
+    String curAmp = 'AM';
+    try {
+      final parts = current.split(':');
+      final h24 = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      curAmp = h24 >= 12 ? 'PM' : 'AM';
+      curH = h24 % 12 == 0 ? 12 : h24 % 12;
+      curM = minutes.contains(m) ? m : (m ~/ 15) * 15;
+    } catch (_) {
+      curH = 9;
+      curM = 0;
+      curAmp = 'AM';
+    }
+
+    int selHour = curH;
+    int selMin = curM;
+    int selAmp = curAmp == 'PM' ? 1 : 0;
+
     await showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(isStart ? 'Select Start Hour' : 'Select End Hour', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _timeSlots.map((time) {
-                  final selected = isStart ? (_startTime == time) : (_endTime == time);
-                  return ChoiceChip(
-                    label: Text(time),
-                    selected: selected,
-                    selectedColor: const Color(0xFF0D9488),
-                    labelStyle: TextStyle(
-                      color: selected ? Colors.white : Colors.black87,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    onSelected: (val) {
-                      if (val) {
-                        setState(() {
-                          if (isStart) {
-                            _startTime = time;
-                          } else {
-                            _endTime = time;
-                          }
-                          _calculateDuration();
-                        });
-                        Navigator.pop(context);
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+        builder: (ctx) {
+          return SizedBox(
+            height: 320,
+            child: Column(
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel')),
+                      Text(isStart ? 'Select Start Time' : 'Select End Time',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      TextButton(
+                          onPressed: () {
+                            // convert to 24h
+                            int hour12 = selHour % 12;
+                            int hour24 = hour12 + (selAmp == 1 ? 12 : 0);
+                            if (selHour == 12 && selAmp == 0) hour24 = 0;
+                            final timeStr =
+                                '${hour24.toString().padLeft(2, '0')}:${selMin.toString().padLeft(2, '0')}';
+                            setState(() {
+                              if (isStart)
+                                _startTime = timeStr;
+                              else
+                                _endTime = timeStr;
+                              _calculateDuration();
+                            });
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('Confirm')),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                              initialItem: selHour - 1),
+                          itemExtent: 32,
+                          onSelectedItemChanged: (i) => selHour = hours[i],
+                          children: hours
+                              .map((h) => Center(child: Text('$h')))
+                              .toList(),
+                        ),
+                      ),
+                      Expanded(
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                              initialItem: minutes.indexOf(selMin)),
+                          itemExtent: 32,
+                          onSelectedItemChanged: (i) => selMin = minutes[i],
+                          children: minutes
+                              .map((m) => Center(
+                                  child: Text(m.toString().padLeft(2, '0'))))
+                              .toList(),
+                        ),
+                      ),
+                      Expanded(
+                        child: CupertinoPicker(
+                          scrollController:
+                              FixedExtentScrollController(initialItem: selAmp),
+                          itemExtent: 32,
+                          onSelectedItemChanged: (i) => selAmp = i,
+                          children:
+                              ampm.map((s) => Center(child: Text(s))).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
   }
 
   void _submitRequest() async {
@@ -964,14 +1127,17 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
 
     if (_useSavedAddress) {
       if (_selectedAddress == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select or add a saved address')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Please select or add a saved address')));
         return;
       }
       addressText = _selectedAddress!.address;
       cityText = _selectedAddress!.city;
     } else {
-      if (_addressController.text.trim().isEmpty || _cityController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter custom address and city')));
+      if (_addressController.text.trim().isEmpty ||
+          _cityController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Please enter custom address and city')));
         return;
       }
       addressText = _addressController.text.trim();
@@ -982,16 +1148,20 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     if (serviceProvider.services.isEmpty) {
       await serviceProvider.fetchServices();
     }
-    final String serviceId = serviceProvider.services.isNotEmpty ? serviceProvider.services.first.id : '';
+    final String serviceId = serviceProvider.services.isNotEmpty
+        ? serviceProvider.services.first.id
+        : '';
 
     if (serviceId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Services loading error. Please retry.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Services loading error. Please retry.')));
       return;
     }
 
     final bookingProvider = context.read<BookingProvider>();
 
-    final selectedExtrasList = _extras.entries.where((e) => e.value).map((e) => e.key).toList();
+    final selectedExtrasList =
+        _extras.entries.where((e) => e.value).map((e) => e.key).toList();
 
     final success = await bookingProvider.createBooking(
       serviceId: serviceId,
@@ -1020,13 +1190,16 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     if (success) {
       final created = bookingProvider.lastCreatedBooking;
       if (created != null) {
-        Navigator.pushReplacementNamed(context, '/booking-confirmation', arguments: created);
+        Navigator.pushReplacementNamed(context, '/booking-confirmation',
+            arguments: created);
       } else {
         Navigator.pop(context);
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(bookingProvider.error ?? 'Request failed'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text(bookingProvider.error ?? 'Request failed'),
+            backgroundColor: Colors.red),
       );
     }
   }

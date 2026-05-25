@@ -7,6 +7,18 @@ const { evaluatePromoConditions } = require('../utils/helpers');
  * Validates promo codes and checks rules
  */
 
+exports.getHotOffers = async (req, res) => {
+  try {
+    const hotOffers = await PromoCode.findAll({
+      where: { is_active: true, is_hot_offer: true }
+    });
+    sendSuccess(res, hotOffers);
+  } catch (error) {
+    console.error('Get hot offers error:', error);
+    sendError(res, 'Failed to fetch hot offers', 500, error);
+  }
+};
+
 exports.validatePromoCode = async (req, res) => {
   try {
     const { code, cleaning_type, extras, subtotal, booking_date } = req.body;

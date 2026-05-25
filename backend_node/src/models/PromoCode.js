@@ -25,6 +25,10 @@ const PromoCode = sequelize.define('PromoCode', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
+  description: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
   conditions: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -38,6 +42,12 @@ const PromoCode = sequelize.define('PromoCode', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
     allowNull: false,
+  },
+  is_hot_offer: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+    comment: 'Flag for Hot Offer promotions',
   },
 }, {
   tableName: 'promo_codes',

@@ -14,6 +14,7 @@ import 'screens/custom_booking_screen.dart';
 import 'screens/booking_confirmation_screen.dart';
 import 'screens/my_addresses_screen.dart';
 import 'screens/booking_details_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'models/booking.dart';
 import 'models/service.dart';
 
@@ -73,6 +74,7 @@ class NaddefliApp extends StatelessWidget {
             final booking = ModalRoute.of(context)?.settings.arguments;
             return BookingDetailsScreen(booking: booking as Booking);
           },
+          '/notifications': (context) => const NotificationsScreen(),
         },
       ),
     );

@@ -169,6 +169,25 @@ export const promosAPI = {
   }
 };
 
+export const addonsAPI = {
+  getAll: async () => {
+    const res = await api.get('/addons/admin');
+    return res.data;
+  },
+  create: async (data) => {
+    const res = await api.post('/addons/admin', data);
+    return res.data;
+  },
+  update: async (id, data) => {
+    const res = await api.put(`/addons/admin/${id}`, data);
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/addons/admin/${id}`);
+    return res.data;
+  }
+};
+
 export const notificationsAPI = {
   getUnread: async () => {
     const lastSeen = localStorage.getItem('naddefli_notifications_last_seen') || '0';

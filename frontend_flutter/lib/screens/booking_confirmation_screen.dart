@@ -99,20 +99,6 @@ class BookingConfirmationScreen extends StatelessWidget {
                       label: booking.propertyType ?? 'Custom property',
                     ),
                     _InfoRow(
-                      icon: Icons.bed_outlined,
-                      label: '${booking.roomCount} rooms',
-                    ),
-                    if (booking.bathroomsCount > 0)
-                      _InfoRow(
-                        icon: Icons.bathtub_outlined,
-                        label: '${booking.bathroomsCount} bathrooms',
-                      ),
-                    if (booking.kitchensCount > 0)
-                      _InfoRow(
-                        icon: Icons.kitchen_outlined,
-                        label: '${booking.kitchensCount} kitchens',
-                      ),
-                    _InfoRow(
                       icon: Icons.cleaning_services_outlined,
                       label: booking.cleaningType == 'deep'
                           ? 'Deep cleaning'
