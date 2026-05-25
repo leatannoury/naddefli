@@ -1,4 +1,4 @@
-const { Booking, Service, User, Cleaner, Notification, Review, Address } = require('../models');
+const { Booking, Service, User, Cleaner, Notification, Review, Address, AddOn } = require('../models');
 const { calculatePrice } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
@@ -53,6 +53,40 @@ const autoCompletePastBookings = async (userId) => {
   }
 };
 
+const parseExtrasList = (extras) => {
+  if (Array.isArray(extras)) {
+    return extras.map((extra) => String(extra).trim()).filter(Boolean);
+  }
+
+  const raw = String(extras || '').trim();
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((extra) => String(extra).trim()).filter(Boolean);
+    }
+  } catch (_) {}
+
+  return raw.split(',').map((extra) => extra.trim()).filter(Boolean);
+};
+
+const calculateAdminAddOnsTotal = async (extras, transaction) => {
+  const selectedNames = parseExtrasList(extras).map((name) => name.toLowerCase());
+  if (!selectedNames.length) return 0.0;
+
+  const activeAddOns = await AddOn.findAll({
+    where: { is_active: true },
+    transaction,
+  });
+
+  return activeAddOns.reduce((sum, addon) => {
+    const name = String(addon.name || '').trim().toLowerCase();
+    if (!name || !selectedNames.includes(name)) return sum;
+    return sum + (parseFloat(addon.price) || 0.0);
+  }, 0.0);
+};
+
 /**
  * Create a new booking
  */
@@ -87,8 +121,6 @@ exports.createBooking = async (req, res) => {
       return sendError(res, 'Please choose a future date and time', 400);
     }
 
-    const isUrgent = (bookingDateTime - now) / (1000 * 60 * 60) < 24;
-
     // Loyalty Check
     const user = await User.findByPk(req.user.id, { transaction: t });
     if (redeem_loyalty) {
@@ -118,15 +150,11 @@ exports.createBooking = async (req, res) => {
     }
 
     // Calculate price
+    const addOnsPrice = await calculateAdminAddOnsTotal(extras, t);
     const totalPrice = calculatePrice({
       duration_hours: duration_hours || 1,
       cleaning_type: cleaning_type || 'normal',
-      extras,
-      is_custom: is_custom || false,
-      room_count: room_count || 0,
-      bathrooms_count: bathrooms_count || 0,
-      kitchens_count: kitchens_count || 0,
-      isUrgent,
+      add_ons_price: addOnsPrice,
       discount_amount: discount_amount || 0.0,
       redeem_loyalty: redeem_loyalty || false,
     });
@@ -172,7 +200,6 @@ exports.createBooking = async (req, res) => {
       res,
       {
         ...booking.toJSON(),
-        isUrgent,
       },
       'Booking created successfully',
       201

@@ -24,7 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
   int _bookingTabIndex = 0;
   int _heroPageIndex = 0;
-  final PageController _heroPageController = PageController(viewportFraction: 0.92);
+  final PageController _heroPageController =
+      PageController(viewportFraction: 0.92);
   final TextEditingController _searchController = TextEditingController();
   Map<String, dynamic> _appSettings = {
     'supportPhone': '+961 00 000 000',
@@ -68,14 +69,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadHotOffers() async {
     try {
-      final response = await HttpService.get('${ApiEndpoints.baseOrigin}/api/promo/hot-offers');
+      final response = await HttpService.get(
+          '${ApiEndpoints.baseOrigin}/api/promo/hot-offers');
       if (response.statusCode == 200 && response.data['success'] == true) {
         final List<dynamic> data = response.data['data'] ?? [];
         final List<Map<String, String>> offers = [];
         for (var item in data) {
           offers.add({
-            'title': (item['description'] ?? '${item['value']}${item['type'] == 'percentage' ? '%' : '\$'} OFF').toString(),
-            'subtitle': 'Use code ${item['code']} for ${item['type'] == 'percentage' ? 'a ${item['value']}% discount' : 'a \$${item['value']} discount'}.',
+            'title': (item['description'] ??
+                    '${item['value']}${item['type'] == 'percentage' ? '%' : '\$'} OFF')
+                .toString(),
+            'subtitle':
+                'Use code ${item['code']} for ${item['type'] == 'percentage' ? 'a ${item['value']}% discount' : 'a \$${item['value']} discount'}.',
             'tag': 'Hot',
             'code': item['code'].toString(),
           });
@@ -97,14 +102,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadAppSettings() async {
-    final settings = await AppSettingsService.getPublicSettings();
+    final settings =
+        await AppSettingsService.getPublicSettings(forceRefresh: true);
     if (mounted) {
       setState(() => _appSettings = settings);
     }
   }
 
   Widget _buildServiceImage(dynamic service) {
-    final imageUrl = resolveServiceImageUrl(service.image, imageUrl: service.imageUrl);
+    final imageUrl =
+        resolveServiceImageUrl(service.image, imageUrl: service.imageUrl);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -145,7 +152,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       color: AppColors.primary.withValues(alpha: 0.08),
       child: Center(
-        child: Icon(Icons.cleaning_services, size: 48, color: AppColors.primary),
+        child:
+            Icon(Icons.cleaning_services, size: 48, color: AppColors.primary),
       ),
     );
   }
@@ -156,6 +164,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadBookings() {
     context.read<BookingProvider>().fetchMyBookings();
+  }
+
+  Future<void> _refreshHome() async {
+    await Future.wait([
+      context.read<ServiceProvider>().fetchServices(),
+      context.read<BookingProvider>().fetchMyBookings(),
+      _loadAppSettings(),
+      _loadUnreadNotifications(),
+      _loadHotOffers(),
+    ]);
   }
 
   bool _isUpcomingBooking(dynamic booking, DateTime now) {
@@ -178,7 +196,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return false;
     }
   }
-
 
   @override
   void dispose() {
@@ -245,170 +262,175 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeTab() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: AppStyles.paddingLarge),
-          _buildHeroSection(),
-          const SizedBox(height: AppStyles.paddingLarge),
-          _buildQuickBookingCard(),
-          const SizedBox(height: AppStyles.paddingLarge),
-          _buildLoyaltyStreakCard(),
-          const SizedBox(height: AppStyles.paddingLarge),
-          _buildOffersSection(),
-          const SizedBox(height: AppStyles.paddingXLarge),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppStyles.marginMobile,
-              0,
-              AppStyles.marginMobile,
-              AppStyles.paddingSmall,
-            ),
-             child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Our Services',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Services Grid
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppStyles.marginMobile,
-            ),
-            child: Consumer<ServiceProvider>(
-              builder: (context, serviceProvider, _) {
-                if (serviceProvider.isLoading) {
-                  return const SizedBox(
-                    height: 300,
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-
-                if (serviceProvider.services.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(AppStyles.paddingLarge),
-                    child: Text(
-                      'No services available',
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                  );
-                }
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                  ),
-                  itemCount: serviceProvider.services.length,
-                  itemBuilder: (context, index) {
-                    final service = serviceProvider.services[index];
-                    return _buildServiceCard(context, service);
-                  },
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: AppStyles.paddingXLarge),
-
-          // Social Proof Section
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppStyles.marginMobile,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+    return RefreshIndicator(
+      onRefresh: _refreshHome,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppStyles.paddingLarge),
+            _buildHeroSection(),
+            const SizedBox(height: AppStyles.paddingLarge),
+            _buildQuickBookingCard(),
+            const SizedBox(height: AppStyles.paddingLarge),
+            _buildLoyaltyStreakCard(),
+            const SizedBox(height: AppStyles.paddingLarge),
+            _buildOffersSection(),
+            const SizedBox(height: AppStyles.paddingXLarge),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppStyles.marginMobile,
+                0,
+                AppStyles.marginMobile,
+                AppStyles.paddingSmall,
               ),
-              padding: const EdgeInsets.all(AppStyles.paddingLarge),
-              child: Column(
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: AppStyles.paddingSmall + 8,
-                        height: AppStyles.paddingSmall + 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHighest,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        width: AppStyles.paddingSmall + 8,
-                        height: AppStyles.paddingSmall + 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        width: AppStyles.paddingSmall + 8,
-                        height: AppStyles.paddingSmall + 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainer,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppStyles.paddingBase),
-                  const Text(
-                    'Trusted by 2,000+ local homes',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.onPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppStyles.paddingSmall),
                   Text(
-                    'Our cleaning experts are background checked and highly rated.',
-                    textAlign: TextAlign.center,
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.onPrimary.withValues(alpha: 0.8),
+                    'Our Services',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
 
-          const SizedBox(height: AppStyles.paddingXLarge),
-        ],
+            // Services Grid
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppStyles.marginMobile,
+              ),
+              child: Consumer<ServiceProvider>(
+                builder: (context, serviceProvider, _) {
+                  if (serviceProvider.isLoading) {
+                    return const SizedBox(
+                      height: 300,
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+
+                  if (serviceProvider.services.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(AppStyles.paddingLarge),
+                      child: Text(
+                        'No services available',
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  }
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.75,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                    ),
+                    itemCount: serviceProvider.services.length,
+                    itemBuilder: (context, index) {
+                      final service = serviceProvider.services[index];
+                      return _buildServiceCard(context, service);
+                    },
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: AppStyles.paddingXLarge),
+
+            // Social Proof Section
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppStyles.marginMobile,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+                ),
+                padding: const EdgeInsets.all(AppStyles.paddingLarge),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: AppStyles.paddingSmall + 8,
+                          height: AppStyles.paddingSmall + 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerHighest,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: AppStyles.paddingSmall + 8,
+                          height: AppStyles.paddingSmall + 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerHigh,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: AppStyles.paddingSmall + 8,
+                          height: AppStyles.paddingSmall + 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainer,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppStyles.paddingBase),
+                    const Text(
+                      'Trusted by 2,000+ local homes',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.onPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppStyles.paddingSmall),
+                    Text(
+                      'Our cleaning experts are background checked and highly rated.',
+                      textAlign: TextAlign.center,
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.onPrimary.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: AppStyles.paddingXLarge),
+          ],
+        ),
       ),
     );
   }
@@ -621,7 +643,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_offerCards.isEmpty)
             Text(
               'No hot offers currently available.',
-              style: AppStyles.bodyMedium.copyWith(color: AppColors.onSurfaceVariant),
+              style: AppStyles.bodyMedium
+                  .copyWith(color: AppColors.onSurfaceVariant),
             )
           else
             SingleChildScrollView(
@@ -630,15 +653,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: List.generate(
                   _offerCards.length,
                   (index) {
-                  final offer = _offerCards[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: _buildOfferCard(offer),
-                  );
-                },
+                    final offer = _offerCards[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _buildOfferCard(offer),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -651,7 +674,8 @@ class _HomeScreenState extends State<HomeScreen> {
         final streakProgress = points % 5;
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -662,7 +686,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: const [
-                BoxShadow(color: Color(0x240D9488), blurRadius: 12, offset: Offset(0, 4))
+                BoxShadow(
+                    color: Color(0x240D9488),
+                    blurRadius: 12,
+                    offset: Offset(0, 4))
               ],
             ),
             child: Column(
@@ -674,7 +701,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: Row(
                         children: [
-                          const Icon(Icons.stars, color: Colors.amber, size: 24),
+                          const Icon(Icons.stars,
+                              color: Colors.amber, size: 24),
                           const SizedBox(width: 8),
                           const Expanded(
                             child: Text(
@@ -691,14 +719,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         'Total: $points pts',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
                       ),
                     )
                   ],
@@ -716,12 +748,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isCompleted 
-                                ? Colors.amber 
+                            color: isCompleted
+                                ? Colors.amber
                                 : Colors.white.withOpacity(0.15),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isCompleted ? Colors.amber : Colors.white38,
+                              color:
+                                  isCompleted ? Colors.amber : Colors.white38,
                               width: 2,
                             ),
                           ),
@@ -729,11 +762,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: isGift
                                 ? Icon(
                                     Icons.card_giftcard,
-                                    color: isCompleted ? Colors.white : Colors.white70,
+                                    color: isCompleted
+                                        ? Colors.white
+                                        : Colors.white70,
                                     size: 20,
                                   )
                                 : (isCompleted
-                                    ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                    ? const Icon(Icons.check,
+                                        color: Colors.white, size: 20)
                                     : Text(
                                         '${index + 1}',
                                         style: const TextStyle(
@@ -750,7 +786,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             color: isCompleted ? Colors.amber : Colors.white70,
                             fontSize: 10,
-                            fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isCompleted
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -759,10 +797,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  points >= 5 
-                      ? '🎉 You unlocked a FREE standard hourly base clean!' 
+                  points >= 5
+                      ? '🎉 You unlocked a FREE standard hourly base clean!'
                       : 'Complete ${5 - streakProgress} more standard booking(s) to unlock milestone 5!',
-                  style: const TextStyle(color: Color(0xFFCCFBF1), fontSize: 11.5, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      color: Color(0xFFCCFBF1),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -852,21 +893,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                     title: Row(
                       children: [
                         const Icon(Icons.local_offer, color: Color(0xFF0D9488)),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(offer['title']!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                        Expanded(
+                            child: Text(offer['title']!,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold))),
                       ],
                     ),
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(offer['subtitle']!, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                        Text(offer['subtitle']!,
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.black87)),
                         const SizedBox(height: 16),
-                        const Text('Use Coupon Code:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                        const Text('Use Coupon Code:',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.grey)),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -880,14 +932,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 offer['code']!,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.5, color: Color(0xFF0D9488)),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    letterSpacing: 1.5,
+                                    color: Color(0xFF0D9488)),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.copy, color: Color(0xFF64748B)),
+                                icon: const Icon(Icons.copy,
+                                    color: Color(0xFF64748B)),
                                 onPressed: () {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Coupon code ${offer['code']} copied to clipboard!')),
+                                    SnackBar(
+                                        content: Text(
+                                            'Coupon code ${offer['code']} copied to clipboard!')),
                                   );
                                 },
                               )
@@ -914,7 +973,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 
   Widget _buildServiceCard(BuildContext context, dynamic service) {
     return GestureDetector(
@@ -1008,7 +1066,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 
   Widget _buildBookingsTab() {
     return Consumer<BookingProvider>(
@@ -1159,12 +1216,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBookingCard(dynamic booking) {
-    final extrasString = booking.extras?.toString() ?? '';
-    final List<String> extras = extrasString
-        .split(',')
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
+    final List<String> extras = booking.extrasList;
 
     return GestureDetector(
       onTap: () {
@@ -1184,16 +1236,15 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    booking.isCustom
-                        ? 'Custom cleaning request'
-                        : booking.address,
+                    booking.displayTitle,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: _getStatusColor(booking.status),
                     borderRadius: BorderRadius.circular(4),
@@ -1219,16 +1270,11 @@ class _HomeScreenState extends State<HomeScreen> {
               '${booking.address}, ${booking.city}',
               style: const TextStyle(fontSize: 13),
             ),
-            if (booking.isCustom) ...[
-              const SizedBox(height: 8),
-              Text(
-                '${booking.propertyType ?? 'Property'} - ${booking.roomCount} rooms'
-                '${booking.bathroomsCount > 0 ? ', ${booking.bathroomsCount} baths' : ''}'
-                '${booking.kitchensCount > 0 ? ', ${booking.kitchensCount} kitchens' : ''}'
-                ' - ${booking.cleaningType == 'deep' ? 'Deep' : 'Normal'}',
-                style: TextStyle(fontSize: 12, color: AppColors.darkGray),
-              ),
-            ],
+            const SizedBox(height: 8),
+            Text(
+              '${booking.cleaningTypeLabel} - ${booking.durationHours.toStringAsFixed(1)} hours',
+              style: TextStyle(fontSize: 12, color: AppColors.darkGray),
+            ),
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(
@@ -1319,7 +1365,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildProfileOption(
                         icon: Icons.location_on_outlined,
                         title: 'My Addresses',
-                        onTap: () => Navigator.of(context).pushNamed('/addresses'),
+                        onTap: () =>
+                            Navigator.of(context).pushNamed('/addresses'),
                       ),
                       _buildProfileOption(
                         icon: Icons.payment_outlined,
@@ -1465,7 +1512,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your phone number.';
                     }
-                    final digits = value.trim().replaceAll(RegExp(r'[\s\-()]'), '');
+                    final digits =
+                        value.trim().replaceAll(RegExp(r'[\s\-()]'), '');
                     if (!RegExp(r'^\+?[0-9]{8,15}$').hasMatch(digits)) {
                       return 'Enter a valid phone number (e.g. +96170123456).';
                     }
@@ -1486,10 +1534,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         return;
                       }
                       final messenger = ScaffoldMessenger.of(context);
-                      final success = await context.read<AuthProvider>().updateProfile(
-                            fullName: nameController.text.trim(),
-                            phone: phoneController.text.trim().replaceAll(RegExp(r'[\s\-()]'), ''),
-                          );
+                      final success =
+                          await context.read<AuthProvider>().updateProfile(
+                                fullName: nameController.text.trim(),
+                                phone: phoneController.text
+                                    .trim()
+                                    .replaceAll(RegExp(r'[\s\-()]'), ''),
+                              );
                       if (!sheetContext.mounted) return;
                       Navigator.pop(sheetContext);
                       messenger.showSnackBar(
@@ -1598,9 +1649,7 @@ class _HomeScreenState extends State<HomeScreen> {
           vertical: AppStyles.paddingSmall,
         ),
         decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.secondaryContainer
-              : Colors.transparent,
+          color: isActive ? AppColors.secondaryContainer : Colors.transparent,
           borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
         ),
         child: Column(

@@ -142,15 +142,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   double _calculateTotal() {
     double subtotal = _calculateSubtotal();
 
-    // Surcharge if urgent
-    final now = DateTime.now();
-    final difference = _selectedDate.difference(now).inHours;
-    double urgentSurcharge = 0.0;
-    if (difference < 24) {
-      urgentSurcharge = subtotal * 0.2;
-    }
-
-    double finalTotal = subtotal + urgentSurcharge - _discountAmount;
+    double finalTotal = subtotal - _discountAmount;
     return finalTotal < 0.0 ? 0.0 : finalTotal;
   }
 

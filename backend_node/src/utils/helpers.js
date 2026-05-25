@@ -62,12 +62,7 @@ const calculatePrice = (options = {}) => {
   const {
     duration_hours = 1,
     cleaning_type = 'normal',
-    extras = '',
-    is_custom = false,
-    room_count = 0,
-    bathrooms_count = 0,
-    kitchens_count = 0,
-    isUrgent = false,
+    add_ons_price = 0,
     discount_amount = 0,
     redeem_loyalty = false,
   } = options;
@@ -79,57 +74,8 @@ const calculatePrice = (options = {}) => {
   // Base cleaning price
   let baseCleaningPrice = redeem_loyalty ? 0.0 : (hourlyRate * parseFloat(duration_hours));
 
-  // Add-ons dictionary
-  const ADDON_PRICES = {
-    'inside windows cleaning': 5.0,
-    'inside windows': 5.0,
-    'windows cleaning': 5.0,
-    'oven cleaning': 4.0,
-    'inside oven': 4.0,
-    'fridge cleaning': 4.0,
-    'inside fridge': 4.0,
-    'balcony cleaning': 3.0,
-    'balcony': 3.0,
-    'sofa cleaning': 8.0,
-    'carpet cleaning': 6.0,
-    'pet hair cleaning': 5.0,
-    'eco-friendly products': 2.0,
-    'eco-products': 2.0,
-    'ironing': 5.0,
-  };
-
-  let addOnsPrice = 0.0;
-   
-  // Parse extras (can be comma-separated string or array)
-  const extrasList = Array.isArray(extras)
-    ? extras
-    : String(extras || '')
-        .split(',')
-        .map(e => e.trim().toLowerCase())
-        .filter(Boolean);
-
-  extrasList.forEach(extra => {
-    let matched = false;
-    for (const [key, price] of Object.entries(ADDON_PRICES)) {
-      if (extra.includes(key) || key.includes(extra)) {
-        addOnsPrice += price;
-        matched = true;
-        break;
-      }
-    }
-    // Default fallback price for other extras
-    if (!matched) {
-      addOnsPrice += 0;
-    }
-  });
-
   // Room counts are informational only — no price impact
-  let finalPrice = baseCleaningPrice + addOnsPrice;
-
-  // Add 20% surcharge for urgent same-day bookings (less than 24h)
-  if (isUrgent) {
-    finalPrice *= 1.2;
-  }
+  let finalPrice = baseCleaningPrice + (parseFloat(add_ons_price) || 0.0);
 
   // Deduct discount
   finalPrice -= parseFloat(discount_amount) || 0.0;

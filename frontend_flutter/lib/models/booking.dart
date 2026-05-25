@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 /// Booking Model
 class Booking {
   final String id;
   final String userId;
   final String? cleanerId;
   final String serviceId;
+  final String? serviceName;
   final DateTime bookingDate;
   final String bookingTime;
   final String startTime;
@@ -15,7 +18,8 @@ class Booking {
   final String city;
   final String? notes;
   final double totalPrice;
-  final String status; // pending, accepted, on_the_way, started, completed, cancelled
+  final String
+      status; // pending, accepted, on_the_way, started, completed, cancelled
   final bool isCustom;
   final String? propertyType;
   final int roomCount;
@@ -30,6 +34,7 @@ class Booking {
     required this.userId,
     this.cleanerId,
     required this.serviceId,
+    this.serviceName,
     required this.bookingDate,
     required this.bookingTime,
     required this.startTime,
@@ -56,14 +61,19 @@ class Booking {
   factory Booking.fromJson(Map<String, dynamic> json) {
     final dateValue = json['booking_date']?.toString();
     final totalValue = double.tryParse(json['total_price']?.toString() ?? '');
-    final durationValue = double.tryParse(json['duration_hours']?.toString() ?? '');
-    final discountValue = double.tryParse(json['discount_amount']?.toString() ?? '');
+    final durationValue =
+        double.tryParse(json['duration_hours']?.toString() ?? '');
+    final discountValue =
+        double.tryParse(json['discount_amount']?.toString() ?? '');
+    final service = json['service'];
+    final serviceName = service is Map ? service['name']?.toString() : null;
 
     return Booking(
       id: json['id'] ?? '',
       userId: json['user_id'] ?? '',
       cleanerId: json['cleaner_id'],
       serviceId: json['service_id'] ?? '',
+      serviceName: serviceName ?? json['service_name']?.toString(),
       bookingDate: dateValue == null
           ? DateTime.now()
           : (DateTime.tryParse(dateValue) ?? DateTime.now()),
@@ -102,6 +112,7 @@ class Booking {
       'user_id': userId,
       'cleaner_id': cleanerId,
       'service_id': serviceId,
+      'service_name': serviceName,
       'booking_date': bookingDate.toIso8601String(),
       'booking_time': bookingTime,
       'start_time': startTime,
@@ -124,6 +135,36 @@ class Booking {
       'created_at': createdAt?.toIso8601String(),
     };
   }
+
+  List<String> get extrasList {
+    final raw = extras?.trim() ?? '';
+    if (raw.isEmpty) return [];
+
+    try {
+      final parsed = jsonDecode(raw);
+      if (parsed is List) {
+        return parsed
+            .map((item) => item.toString().trim())
+            .where((item) => item.isNotEmpty)
+            .toList();
+      }
+    } catch (_) {}
+
+    return raw
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+
+  String get displayTitle {
+    if (isCustom) return 'Custom cleaning request';
+    return serviceName ?? propertyType ?? 'Cleaning service';
+  }
+
+  String get cleaningTypeLabel => cleaningType.toLowerCase() == 'deep'
+      ? 'Deep cleaning'
+      : 'Normal cleaning';
 
   /// Get readable status
   String getStatusLabel() {
