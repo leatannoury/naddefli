@@ -11,6 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Firebase & Auth
+  firebase_core: ^4.10.0
+  firebase_auth: ^6.5.2
+  google_sign_in: ^6.1.0
+
   # State Management
   provider: ^6.0.0
 

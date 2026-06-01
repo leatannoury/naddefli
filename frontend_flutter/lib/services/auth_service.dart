@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import '../models/user.dart';
 import '../utils/constants.dart';
 import '../utils/storage_service.dart';
 import 'http_service.dart';

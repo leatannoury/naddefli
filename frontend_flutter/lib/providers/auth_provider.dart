@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
-import '../services/auth_service.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/http_service.dart';
+import '../utils/constants.dart';
 import '../utils/storage_service.dart';
 
 /// Auth Provider for state management
@@ -29,7 +31,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Register user
+  /// Register user with Firebase + Backend
   Future<bool> register({
     required String fullName,
     required String email,
@@ -41,7 +43,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await AuthService.register(
+      final result = await FirebaseAuthService.signUpWithEmail(
         fullName: fullName,
         email: email,
         password: password,
@@ -69,7 +71,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Login user
+  /// Login user with Firebase + Backend
   Future<bool> login({
     required String email,
     required String password,
@@ -79,10 +81,40 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await AuthService.login(
+      final result = await FirebaseAuthService.signInWithEmail(
         email: email,
         password: password,
       );
+
+      if (result['success']) {
+        final userData = result['data']['user'];
+        _user = User.fromJson(userData);
+        _token = result['data']['token'];
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = result['message'];
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Login with Google
+  Future<bool> loginWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await FirebaseAuthService.signInWithGoogle();
 
       if (result['success']) {
         final userData = result['data']['user'];
@@ -108,20 +140,24 @@ class AuthProvider extends ChangeNotifier {
   /// Get user profile
   Future<bool> getProfile() async {
     try {
-      final result = await AuthService.getProfile();
-      if (result['success']) {
-        _user = User.fromJson(result['data']);
-        notifyListeners();
-        return true;
+      final response = await HttpService.get(ApiEndpoints.profile);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success']) {
+          _user = User.fromJson(data['data']);
+          notifyListeners();
+          return true;
+        }
       }
 
-      final message = result['message']?.toString().toLowerCase() ?? '';
-      if (result['statusCode'] == 401 ||
+      final message = response.data['message']?.toString().toLowerCase() ?? '';
+      if (response.statusCode == 401 ||
           message.contains('invalid') ||
           message.contains('expired')) {
         await logout();
       }
-      _error = result['message'];
+      _error = response.data['message'];
       notifyListeners();
       return false;
     } catch (e) {
@@ -141,22 +177,27 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await AuthService.updateProfile(
-        fullName: fullName,
-        phone: phone,
+      final response = await HttpService.put(
+        ApiEndpoints.profile,
+        data: {
+          'full_name': fullName,
+          if (phone != null) 'phone': phone,
+        },
       );
 
-      if (result['success']) {
-        _user = User.fromJson(result['data']);
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _error = result['message'];
-        _isLoading = false;
-        notifyListeners();
-        return false;
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success']) {
+          _user = User.fromJson(data['data']);
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        }
       }
+      _error = response.data['message'];
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -167,7 +208,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// Logout
   Future<void> logout() async {
-    await AuthService.logout();
+    await FirebaseAuthService.signOut();
     _user = null;
     _token = null;
     _error = null;

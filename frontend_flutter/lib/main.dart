@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'utils/storage_service.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'app.dart';
+import 'utils/storage_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize storage
+  await Firebase.initializeApp();
   await StorageService.init();
-
   runApp(const NaddefliApp());
 }

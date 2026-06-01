@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_styles.dart';
-import 'login_screen.dart';
-import 'home_screen.dart';
-import 'onboarding_screen.dart';
 
 /// Splash Screen - App entry point
 class SplashScreen extends StatefulWidget {

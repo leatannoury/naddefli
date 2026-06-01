@@ -45,7 +45,7 @@ class HttpService {
         queryParameters: queryParameters,
       );
       return response;
-    } on DioException catch (e) {
+    } on DioException {
       rethrow;
     }
   }
@@ -63,7 +63,7 @@ class HttpService {
         queryParameters: queryParameters,
       );
       return response;
-    } on DioException catch (e) {
+    } on DioException {
       rethrow;
     }
   }
@@ -76,7 +76,7 @@ class HttpService {
     try {
       final response = await _dio.put(url, data: data);
       return response;
-    } on DioException catch (e) {
+    } on DioException {
       rethrow;
     }
   }
@@ -86,7 +86,7 @@ class HttpService {
     try {
       final response = await _dio.delete(url);
       return response;
-    } on DioException catch (e) {
+    } on DioException {
       rethrow;
     }
   }

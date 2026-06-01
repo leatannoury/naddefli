@@ -109,6 +109,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               const SizedBox(height: 16),
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, _) {
+                  return SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: authProvider.isLoading
+                          ? null
+                          : () => _handleGoogleSignIn(context),
+                      icon: const Icon(Icons.account_circle),
+                      label: const Text('Sign up with Google'),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
               // Error message
               Consumer<AuthProvider>(
                 builder: (context, authProvider, _) {
@@ -280,6 +295,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text,
       phone: _phoneController.text.trim(),
     );
+
+    if (success && mounted) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
+  }
+
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+
+    final success = await authProvider.loginWithGoogle();
 
     if (success && mounted) {
       Navigator.of(context).pushReplacementNamed('/home');

@@ -1,3 +1,4 @@
+const https = require('https');
 const { User, Cleaner } = require('../models');
 const { hashPassword, comparePassword, generateToken } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
@@ -111,6 +112,92 @@ exports.login = async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     sendError(res, 'Login failed', 500, error);
+  }
+};
+
+const verifyGoogleIdToken = (idToken) => {
+  return new Promise((resolve, reject) => {
+    const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode !== 200) {
+          return reject(new Error(`Invalid Google token (status ${res.statusCode})`));
+        }
+        try {
+          const payload = JSON.parse(data);
+          resolve(payload);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }).on('error', (error) => reject(error));
+  });
+};
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { id_token, email, full_name, phone } = req.body;
+
+    if (!id_token || !email) {
+      return sendError(res, 'Google token and email are required', 400);
+    }
+
+    let payload;
+    try {
+      payload = await verifyGoogleIdToken(id_token);
+    } catch (error) {
+      console.error('Google token verification error:', error);
+      return sendError(res, 'Invalid Google token', 401, error);
+    }
+
+    const emailVerified =
+      payload.email_verified === true ||
+      payload.email_verified === 'true' ||
+      payload.email_verified === '1';
+    const issuerValid =
+      payload.iss === 'accounts.google.com' ||
+      payload.iss === 'https://accounts.google.com';
+
+    if (!emailVerified || !issuerValid || payload.email !== email) {
+      return sendError(res, 'Google account email verification failed', 401);
+    }
+
+    const firebaseUid = payload.sub || email;
+    let user = await User.findOne({ where: { email } });
+
+    if (user) {
+      if (user.is_blocked) {
+        return sendError(res, 'Your account has been suspended. Please contact support.', 403);
+      }
+    } else {
+      const hashedPassword = await hashPassword(firebaseUid);
+      user = await User.create({
+        full_name: full_name || payload.name || 'User',
+        email,
+        phone: phone || payload.phone_number || null,
+        password: hashedPassword,
+        role: 'customer',
+      });
+    }
+
+    const token = generateToken(user);
+
+    sendSuccess(res, {
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    sendError(res, 'Google login failed', 500, error);
   }
 };
 

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "521552881955",
+    "project_id": "naddefli",
+    "storage_bucket": "naddefli.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:521552881955:android:22459dac464827cb9b4496",
+        "android_client_info": {
+          "package_name": "com.example.naddefli"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "521552881955-qdu6bbo92gimk70ie4tmi534gk4u01cf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.naddefli",
+            "certificate_hash": "d673a475d3be59e64ead8c3dc689bbee79728361"
+          }
+        },
+        {
+          "client_id": "521552881955-kidel4uek77mk750d4l9aejqbfemtti3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHdY3Jm1KrpD2Vhn5Bkpv7dniCN1bRYZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "521552881955-kidel4uek77mk750d4l9aejqbfemtti3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

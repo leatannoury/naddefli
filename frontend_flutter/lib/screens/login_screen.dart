@@ -103,6 +103,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+                // Google Sign In button
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    return SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : () => _handleGoogleSignIn(context),
+                        icon: const Icon(Icons.account_circle),
+                        label: const Text('Sign in with Google'),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
                 // Error message
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
@@ -239,6 +255,16 @@ class _LoginScreenState extends State<LoginScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
+
+    if (success && mounted) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
+  }
+
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+
+    final success = await authProvider.loginWithGoogle();
 
     if (success && mounted) {
       Navigator.of(context).pushReplacementNamed('/home');

@@ -7,6 +7,7 @@ class ApiEndpoints {
   // Auth
   static const String register = '$BASE_URL/auth/register';
   static const String login = '$BASE_URL/auth/login';
+  static const String googleAuth = '$BASE_URL/auth/google';
   static const String profile = '$BASE_URL/auth/profile';
 
   // Services
