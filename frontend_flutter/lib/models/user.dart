@@ -25,7 +25,7 @@ class User {
   /// Factory constructor for JSON deserialization
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       fullName: json['full_name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'],

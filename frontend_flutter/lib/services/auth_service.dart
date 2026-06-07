@@ -61,8 +61,8 @@ class AuthService {
           final user = data['data']['user'];
           
           await StorageService.saveToken(token);
-          await StorageService.saveUserId(user['id']);
-          await StorageService.saveUserRole(user['role']);
+          await StorageService.saveUserId(user['id'].toString());
+          await StorageService.saveUserRole(user['role'].toString());
           
           return {'success': true, 'data': data['data']};
         }

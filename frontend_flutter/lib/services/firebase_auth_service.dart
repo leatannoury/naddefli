@@ -8,7 +8,9 @@ import 'http_service.dart';
 class FirebaseAuthService {
   static final firebase_auth.FirebaseAuth _firebaseAuth = 
       firebase_auth.FirebaseAuth.instance;
-  static final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '521552881955-kidel4uek77mk750d4l9aejqbfemtti3.apps.googleusercontent.com',
+  );
 
   /// Sign up with email and password
   /// Creates Firebase user + backend user
@@ -49,8 +51,8 @@ class FirebaseAuthService {
           
           // Save to local storage
           await StorageService.saveToken(token);
-          await StorageService.saveUserId(user['id']);
-          await StorageService.saveUserRole(user['role']);
+          await StorageService.saveUserId(user['id'].toString());
+          await StorageService.saveUserRole(user['role'].toString());
 
           return {'success': true, 'data': data['data']};
         }
@@ -63,13 +65,17 @@ class FirebaseAuthService {
         'message': response.data['message'] ?? 'Registration failed'
       };
     } on firebase_auth.FirebaseAuthException catch (e) {
-      String message = 'Authentication failed';
+      String message;
       if (e.code == 'email-already-in-use') {
         message = 'Email already registered';
       } else if (e.code == 'weak-password') {
         message = 'Password is too weak';
       } else if (e.code == 'invalid-email') {
         message = 'Invalid email address';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Email/Password sign-in is not enabled. Please enable it in Firebase Console.';
+      } else {
+        message = 'Authentication failed (${e.code}): ${e.message}';
       }
       return {'success': false, 'message': message};
     } catch (e) {
@@ -111,8 +117,8 @@ class FirebaseAuthService {
 
           // Save to local storage
           await StorageService.saveToken(token);
-          await StorageService.saveUserId(user['id']);
-          await StorageService.saveUserRole(user['role']);
+          await StorageService.saveUserId(user['id'].toString());
+          await StorageService.saveUserRole(user['role'].toString());
 
           return {'success': true, 'data': data['data']};
         }
@@ -125,13 +131,15 @@ class FirebaseAuthService {
         'message': response.data['message'] ?? 'Login failed'
       };
     } on firebase_auth.FirebaseAuthException catch (e) {
-      String message = 'Sign in failed';
-      if (e.code == 'user-not-found') {
-        message = 'Invalid email or password';
-      } else if (e.code == 'wrong-password') {
+      String message;
+      if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
         message = 'Invalid email or password';
       } else if (e.code == 'user-disabled') {
         message = 'Your account has been suspended. Please contact support.';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Email/Password sign-in is not enabled. Please enable it in Firebase Console.';
+      } else {
+        message = 'Sign in failed (${e.code}): ${e.message}';
       }
       return {'success': false, 'message': message};
     } catch (e) {
@@ -184,8 +192,8 @@ class FirebaseAuthService {
 
           // Save to local storage
           await StorageService.saveToken(token);
-          await StorageService.saveUserId(user['id']);
-          await StorageService.saveUserRole(user['role']);
+          await StorageService.saveUserId(user['id'].toString());
+          await StorageService.saveUserRole(user['role'].toString());
 
           return {'success': true, 'data': data['data']};
         }
