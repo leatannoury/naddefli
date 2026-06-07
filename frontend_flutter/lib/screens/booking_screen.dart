@@ -8,7 +8,6 @@ import '../providers/booking_provider.dart';
 import '../providers/address_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/pricing.dart';
-import '../services/app_settings_service.dart';
 
 class BookingScreen extends StatefulWidget {
   final Service service;
@@ -26,7 +25,6 @@ class _BookingScreenState extends State<BookingScreen> {
   double _durationHours = 4.0;
 
   String _cleaningType = 'normal';
-  final Set<String> _selectedAddons = {};
 
   // Saved Address variables
   Address? _selectedAddress;
@@ -45,32 +43,12 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _redeemLoyaltyPoints = false;
   String? _promoMessage;
 
-  final Map<String, double> _addOnPrices = {};
-
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now().add(const Duration(days: 1));
     _cleaningType =
         widget.service.name.toLowerCase().contains('deep') ? 'deep' : 'normal';
-
-    _addOnPrices.clear();
-
-    AppSettingsService.getPublicAddOns(forceRefresh: true).then((globals) {
-      if (!mounted) return;
-      setState(() {
-        _addOnPrices.clear();
-        for (final addon in globals) {
-          final name =
-              (addon['name'] ?? addon['title'] ?? '').toString().trim();
-          final price =
-              double.tryParse((addon['price'] ?? '').toString()) ?? 0.0;
-          if (name.isNotEmpty) {
-            _addOnPrices[name] = price;
-          }
-        }
-      });
-    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AddressProvider>(context, listen: false)
@@ -128,11 +106,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final base = _redeemLoyaltyPoints
         ? 0.0
         : Pricing.hourlyRate(_cleaningType) * _durationHours;
-    double addons = 0.0;
-    for (final name in _selectedAddons) {
-      addons += _addOnPrices[name] ?? 0.0;
-    }
-    return base + addons;
+    return base;
   }
 
   double _calculateTotal() {
@@ -154,7 +128,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final result = await provider.validatePromoCode(
       code: code,
       cleaningType: _cleaningType,
-      extras: _selectedAddons.join(', '),
+      extras: '',
       subtotal: subtotal,
       bookingDate: DateFormat('yyyy-MM-dd').format(_selectedDate),
     );
@@ -518,124 +492,6 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Selectable Add-ons List Card
-            Card(
-              elevation: 2,
-              shadowColor: const Color(0x1F000000),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '2. Selectable Add-ons',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF1E293B)),
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      children: _addOnPrices.entries.map((entry) {
-                        final addon = entry.key;
-                        final price = entry.value;
-                        final isSelected = _selectedAddons.contains(addon);
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (isSelected) {
-                                _selectedAddons.remove(addon);
-                              } else {
-                                _selectedAddons.add(addon);
-                              }
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFFF0FDFA)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xFF0D9488)
-                                    : const Color(0xFFE2E8F0),
-                                width: isSelected ? 2.0 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF0D9488)
-                                        : Colors.transparent,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? const Color(0xFF0D9488)
-                                          : const Color(0xFFCBD5E1),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: isSelected
-                                      ? const Icon(Icons.check,
-                                          color: Colors.white, size: 14)
-                                      : null,
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Text(
-                                    addon,
-                                    style: TextStyle(
-                                      fontSize: 14.5,
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.w500,
-                                      color: const Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFFCCFBF1)
-                                        : const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    '+\$${price.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? const Color(0xFF0F766E)
-                                          : const Color(0xFF64748B),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
             // Saved Addresses / Address Fields Selection Card
             Card(
               elevation: 2,
@@ -648,7 +504,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '3. Address Information',
+                      '2. Address Information',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -811,7 +667,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '4. Add Promo Code',
+                      '3. Add Promo Code',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -906,13 +762,6 @@ class _BookingScreenState extends State<BookingScreen> {
                       'Base cleaning rate (${_cleaningType == "deep" ? "\$6/hr" : "\$4/hr"} x ${_durationHours.toStringAsFixed(1)}h)',
                       '\$${(_redeemLoyaltyPoints ? 0.0 : (_cleaningType == "deep" ? 6.0 : 4.0) * _durationHours).toStringAsFixed(2)}',
                     ),
-                    if (_selectedAddons.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      _buildInvoiceRow(
-                        'Add-ons sum (${_selectedAddons.length})',
-                        '\$${_selectedAddons.fold(0.0, (double sum, String item) => sum + (_addOnPrices[item] ?? 0.0)).toStringAsFixed(2)}',
-                      ),
-                    ],
                     if (_discountAmount > 0) ...[
                       const SizedBox(height: 8),
                       _buildInvoiceRow(
@@ -1186,7 +1035,7 @@ class _BookingScreenState extends State<BookingScreen> {
       isCustom: false,
       propertyType: widget.service.name,
       cleaningType: _cleaningType,
-      extras: _selectedAddons.join(', '),
+      extras: '',
       discountAmount: _discountAmount,
       promoCode: _appliedPromoCode,
       redeemLoyalty: _redeemLoyaltyPoints,
@@ -1211,3 +1060,4 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 }
+
