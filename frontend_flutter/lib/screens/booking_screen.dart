@@ -188,8 +188,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final userPoints = authProvider.user?.loyaltyPoints ?? 0;
+    const rewardsAvailable =
+        0; // Rewards are redeemable only from custom booking.
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -211,7 +211,7 @@ class _BookingScreenState extends State<BookingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Loyalty milestones bar
-            if (userPoints > 0)
+            if (rewardsAvailable > 0)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -255,7 +255,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ],
                           ),
                         ),
-                        if (userPoints >= 5)
+                        if (rewardsAvailable > 0)
                           Row(
                             children: [
                               const Text('Redeem',
@@ -286,7 +286,7 @@ class _BookingScreenState extends State<BookingScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              'Total: $userPoints pts',
+                              '$rewardsAvailable rewards ready',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -298,8 +298,8 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(5, (index) {
-                        final streakProgress = userPoints % 5;
+                      children: List.generate(4, (index) {
+                        final streakProgress = rewardsAvailable;
                         final isCompleted = index < streakProgress;
                         final isGift = index == 4;
 
@@ -360,9 +360,9 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      userPoints >= 5
-                          ? '🎉 You unlocked a FREE standard hourly base clean!'
-                          : 'Complete ${5 - (userPoints % 5)} more standard booking(s) to unlock milestone 5!',
+                      rewardsAvailable > 0
+                          ? 'Use your available reward from custom booking.'
+                          : 'Rewards are available only in custom booking.',
                       style: const TextStyle(
                           color: Color(0xFFCCFBF1),
                           fontSize: 11.5,

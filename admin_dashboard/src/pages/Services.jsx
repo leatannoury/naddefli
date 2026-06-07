@@ -427,7 +427,7 @@ const Services = () => {
       </Card>
 
       {/* Services Grid */}
-      <Grid container spacing={3}>
+      <Grid container spacing={3} alignItems="stretch">
         {loading && filteredServices.length === 0 ? (
           <Grid item xs={12}>
             <Box sx={{ py: 8, textAlign: 'center', color: '#697386' }}>Retrieving platform catalog...</Box>
@@ -440,10 +440,12 @@ const Services = () => {
           </Grid>
         ) : (
           filteredServices.map((service) => (
-            <Grid item xs={12} sm={6} md={4} key={service.id}>
+            <Grid item xs={12} sm={6} md={4} key={service.id} sx={{ display: 'flex' }}>
               <Card
                 sx={{
                   height: '100%',
+                  width: '100%',
+                  minHeight: 490,
                   borderRadius: '12px',
                   border: '1px solid #e6ebf1',
                   boxShadow: 'none',

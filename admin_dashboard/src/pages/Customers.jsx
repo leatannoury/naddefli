@@ -56,7 +56,7 @@ const Customers = () => {
     email: '',
     phone: '',
     password: '',
-    loyalty_points: 0,
+    loyalty_rewards_available: 0,
     is_blocked: false
   });
   
@@ -136,7 +136,7 @@ const Customers = () => {
   };
 
   const handleOpenCreate = () => {
-    setCustomerForm({ full_name: '', email: '', phone: '', password: '', loyalty_points: 0, is_blocked: false });
+    setCustomerForm({ full_name: '', email: '', phone: '', password: '', loyalty_rewards_available: 0, is_blocked: false });
     setCreateOpen(true);
   };
 
@@ -149,7 +149,7 @@ const Customers = () => {
     try {
       const payload = {
         ...customerForm,
-        loyalty_points: parseInt(customerForm.loyalty_points, 10) || 0,
+        loyalty_rewards_available: parseInt(customerForm.loyalty_rewards_available, 10) || 0,
       };
       const res = await customersAPI.create(payload);
       if (res && res.success) {
@@ -241,8 +241,8 @@ const Customers = () => {
     }
     return true;
   }).sort((a, b) => {
-    if (sortField === 'loyalty_desc') return (b.loyalty_points || 0) - (a.loyalty_points || 0);
-    if (sortField === 'loyalty_asc') return (a.loyalty_points || 0) - (b.loyalty_points || 0);
+    if (sortField === 'loyalty_desc') return (b.loyalty_rewards_available || 0) - (a.loyalty_rewards_available || 0);
+    if (sortField === 'loyalty_asc') return (a.loyalty_rewards_available || 0) - (b.loyalty_rewards_available || 0);
     if (sortField === 'blocked_first') return (b.is_blocked ? 1 : 0) - (a.is_blocked ? 1 : 0);
     if (sortField === 'name_asc') return (a.full_name || '').localeCompare(b.full_name || '');
     if (sortField === 'name_desc') return (b.full_name || '').localeCompare(a.full_name || '');
@@ -259,7 +259,7 @@ const Customers = () => {
 
   // Statistics summaries
   const totalBlocked = customers.filter(c => c.is_blocked).length;
-  const topLoyalty = customers.reduce((acc, c) => Math.max(acc, c.loyalty_points || 0), 0);
+  const topLoyalty = customers.reduce((acc, c) => Math.max(acc, c.loyalty_rewards_available || 0), 0);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -339,7 +339,7 @@ const Customers = () => {
         <Grid item xs={12} sm={4}>
           <StatCard
             title="Highest Loyalty Balance"
-            value={`${topLoyalty} pts`}
+            value={`${topLoyalty} rewards`}
             icon={<Star />}
             color="#f5a623"
             subtitle="Top customer rewards"
@@ -405,7 +405,7 @@ const Customers = () => {
                 <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>Phone Number</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>
                   <TableSortLabel active={sortField.includes('loyalty')} direction={sortField === 'loyalty_desc' ? 'desc' : 'asc'} onClick={() => handleSortBy('loyalty')}>
-                    Loyalty Points
+                    Available Rewards
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#697386', bgcolor: '#f6f9fc' }}>
@@ -443,7 +443,7 @@ const Customers = () => {
                     <TableCell>{row.email}</TableCell>
                     <TableCell>{row.phone || 'No phone recorded'}</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: '#f5a623' }}>
-                      {row.loyalty_points || 0} pts
+                      {row.loyalty_rewards_available || 0} rewards
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: '#0A2540' }}>
                       {row.bookings_count || 0} bookings
@@ -538,9 +538,9 @@ const Customers = () => {
               type="password"
             />
             <TextField
-              label="Loyalty Points"
-              value={customerForm.loyalty_points}
-              onChange={handleCreateInputChange('loyalty_points')}
+              label="Available Rewards"
+              value={customerForm.loyalty_rewards_available}
+              onChange={handleCreateInputChange('loyalty_rewards_available')}
               fullWidth
               size="small"
               type="number"
@@ -590,9 +590,9 @@ const Customers = () => {
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <Box sx={{ border: '1px solid #e6ebf1', p: 2, borderRadius: '8px', textAlign: 'center' }}>
-                    <Typography variant="caption" sx={{ color: '#697386', fontWeight: 600 }}>LOYALTY POINTS</Typography>
+                    <Typography variant="caption" sx={{ color: '#697386', fontWeight: 600 }}>AVAILABLE REWARDS</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 800, color: '#f5a623', mt: 0.5 }}>
-                      {selectedCustomer.loyalty_points || 0} pts
+                      {selectedCustomer.loyalty_rewards_available || 0}
                     </Typography>
                   </Box>
                 </Grid>

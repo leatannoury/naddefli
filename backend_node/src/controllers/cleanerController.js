@@ -1,6 +1,7 @@
 const { Booking, Cleaner, Review, User, Notification } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
+const { awardCleaningMilestone } = require('../utils/loyalty');
 
 /**
  * Cleaner Controller
@@ -143,9 +144,13 @@ exports.updateBookingStatus = async (req, res) => {
       return sendError(res, 'You are not assigned to this booking', 403);
     }
 
-    // Update status
+    const wasCompleted = booking.status === 'completed';
     booking.status = status;
     await booking.save({ transaction: t });
+    let rewardEarned = false;
+    if (status === 'completed' && !wasCompleted) {
+      ({ rewardEarned } = await awardCleaningMilestone(booking.user_id, booking, t));
+    }
 
     // Create notification for customer
     const statusMessages = {
@@ -158,7 +163,9 @@ exports.updateBookingStatus = async (req, res) => {
       {
         user_id: booking.user_id,
         title: 'Booking Status Updated',
-        body: `${statusMessages[status]} for your booking at ${booking.address}`,
+        body: rewardEarned
+          ? `${statusMessages[status]} for your booking at ${booking.address}. You unlocked a free normal cleaning reward!`
+          : `${statusMessages[status]} for your booking at ${booking.address}`,
       },
       { transaction: t }
     );

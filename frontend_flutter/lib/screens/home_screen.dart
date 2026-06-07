@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../providers/booking_provider.dart';
@@ -26,6 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _heroPageIndex = 0;
   final PageController _heroPageController =
       PageController(viewportFraction: 0.92);
+  final ScrollController _homeScrollController = ScrollController();
+  final GlobalKey _servicesSectionKey = GlobalKey();
   final TextEditingController _searchController = TextEditingController();
   Map<String, dynamic> _appSettings = {
     'supportPhone': '+961 00 000 000',
@@ -33,21 +36,31 @@ class _HomeScreenState extends State<HomeScreen> {
   };
   int _unreadNotifications = 0;
 
-  final List<Map<String, String>> _heroCards = [
+  final List<Map<String, dynamic>> _heroCards = [
     {
       'title': 'A Cleaner Home, A Better Life',
-      'subtitle': 'Professional cleaning services at your fingertips',
-      'button': 'Book Now',
+      'subtitle':
+          'Trusted home cleaning that gives you more time for what matters.',
+      'icon': Icons.auto_awesome,
+      'colors': const [Color(0xFF0F766E), Color(0xFF14B8A6)],
     },
     {
       'title': 'Book Your Cleaning Now',
-      'subtitle': 'Customize your cleaning and get an instant price estimate',
-      'button': 'Get Started',
+      'subtitle':
+          'Choose your schedule, cleaning type, and extras in a few simple steps.',
+      'button': 'Customize & Book',
+      'action': 'book',
+      'icon': Icons.calendar_month_rounded,
+      'colors': const [Color(0xFF312E81), Color(0xFF6366F1)],
     },
     {
-      'title': 'Professional Cleaners You Can Trust',
-      'subtitle': 'Background-checked experts with 5-star ratings',
+      'title': 'Explore Our Services',
+      'subtitle':
+          'Find the right cleaning service for every room and every need.',
       'button': 'Explore Services',
+      'action': 'services',
+      'icon': Icons.cleaning_services_rounded,
+      'colors': const [Color(0xFF9A3412), Color(0xFFF97316)],
     },
   ];
 
@@ -163,13 +176,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _loadBookings() {
-    context.read<BookingProvider>().fetchMyBookings();
+    context.read<BookingProvider>().fetchMyBookings().then((_) {
+      if (mounted) context.read<AuthProvider>().getProfile();
+    });
   }
 
   Future<void> _refreshHome() async {
     await Future.wait([
       context.read<ServiceProvider>().fetchServices(),
       context.read<BookingProvider>().fetchMyBookings(),
+      context.read<AuthProvider>().getProfile(),
       _loadAppSettings(),
       _loadUnreadNotifications(),
       _loadHotOffers(),
@@ -200,6 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _heroPageController.dispose();
+    _homeScrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -265,6 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return RefreshIndicator(
       onRefresh: _refreshHome,
       child: SingleChildScrollView(
+        controller: _homeScrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,6 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildOffersSection(),
             const SizedBox(height: AppStyles.paddingXLarge),
             Padding(
+              key: _servicesSectionKey,
               padding: const EdgeInsets.fromLTRB(
                 AppStyles.marginMobile,
                 0,
@@ -439,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 220,
+          height: 238,
           child: PageView.builder(
             controller: _heroPageController,
             itemCount: _heroCards.length,
@@ -451,10 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary,
-                        AppColors.secondary.withValues(alpha: 0.9),
-                      ],
+                      colors: card['colors'],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -467,66 +483,88 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(AppStyles.paddingLarge),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
                     children: [
-                      Flexible(
-                        child: Text(
-                          card['title']!,
-                          style: const TextStyle(
-                            color: AppColors.onPrimary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            height: 1.2,
+                      Positioned(
+                        right: -38,
+                        top: -45,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.10),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Flexible(
-                        child: Text(
-                          card['subtitle']!,
-                          style: TextStyle(
-                            color: AppColors.onPrimary.withValues(alpha: 0.9),
-                            fontSize: 13,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Positioned(
+                        right: 24,
+                        bottom: 20,
+                        child: Icon(card['icon'],
+                            size: 92,
+                            color: Colors.white.withValues(alpha: 0.16)),
                       ),
-                      const Spacer(),
-                      SizedBox(
-                        height: 40,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (card['button'] == 'Book Now') {
-                              Navigator.of(context)
-                                  .pushNamed('/custom-booking');
-                            } else {
-                              Navigator.of(context)
-                                  .pushReplacementNamed('/home');
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.surface,
-                            foregroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
+                      Padding(
+                        padding: const EdgeInsets.all(AppStyles.paddingLarge),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              card['title'],
+                              style: const TextStyle(
+                                color: AppColors.onPrimary,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                height: 1.12,
+                              ),
+                              maxLines: 2,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: 245,
+                              child: Text(
+                                card['subtitle'],
+                                style: TextStyle(
+                                  color: AppColors.onPrimary
+                                      .withValues(alpha: 0.9),
+                                  fontSize: 13.5,
+                                  height: 1.4,
+                                ),
+                                maxLines: 3,
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            card['button']!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
+                            const Spacer(),
+                            if (card['button'] != null)
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (card['action'] == 'book') {
+                                    Navigator.of(context)
+                                        .pushNamed('/custom-booking');
+                                  } else {
+                                    Scrollable.ensureVisible(
+                                      _servicesSectionKey.currentContext!,
+                                      duration:
+                                          const Duration(milliseconds: 600),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: card['colors'][0],
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 18, vertical: 11),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(card['button'],
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -670,8 +708,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildLoyaltyStreakCard() {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        final points = auth.user?.loyaltyPoints ?? 0;
-        final streakProgress = points % 5;
+        final streakProgress = auth.user?.loyaltyProgress ?? 0;
+        final rewards = auth.user?.loyaltyRewardsAvailable ?? 0;
 
         return Padding(
           padding:
@@ -726,7 +764,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        'Total: $points pts',
+                        rewards == 1
+                            ? '1 reward ready'
+                            : '$rewards rewards ready',
                         style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -738,9 +778,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(5, (index) {
+                  children: List.generate(4, (index) {
                     final isCompleted = index < streakProgress;
-                    final isGift = index == 4;
 
                     return Column(
                       children: [
@@ -759,30 +798,22 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           child: Center(
-                            child: isGift
-                                ? Icon(
-                                    Icons.card_giftcard,
-                                    color: isCompleted
-                                        ? Colors.white
-                                        : Colors.white70,
-                                    size: 20,
-                                  )
-                                : (isCompleted
-                                    ? const Icon(Icons.check,
-                                        color: Colors.white, size: 20)
-                                    : Text(
-                                        '${index + 1}',
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      )),
+                            child: isCompleted
+                                ? const Icon(Icons.check,
+                                    color: Colors.white, size: 20)
+                                : Text(
+                                    '${index + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          isGift ? 'Reward' : 'Clean ${index + 1}',
+                          'Clean ${index + 1}',
                           style: TextStyle(
                             color: isCompleted ? Colors.amber : Colors.white70,
                             fontSize: 10,
@@ -797,9 +828,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  points >= 5
-                      ? '🎉 You unlocked a FREE standard hourly base clean!'
-                      : 'Complete ${5 - streakProgress} more standard booking(s) to unlock milestone 5!',
+                  rewards > 0
+                      ? 'Your free normal cleaning reward is ready in custom booking.'
+                      : 'Complete ${4 - streakProgress} more cleaning(s) to unlock a free normal cleaning.',
                   style: const TextStyle(
                       color: Color(0xFFCCFBF1),
                       fontSize: 11.5,
@@ -1381,7 +1412,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildProfileOption(
                         icon: Icons.history,
                         title: 'Transaction History',
-                        onTap: () => setState(() => _selectedTabIndex = 1),
+                        onTap: _showTransactionHistory,
                       ),
                       _buildProfileOption(
                         icon: Icons.help_outline,
@@ -1444,6 +1475,148 @@ class _HomeScreenState extends State<HomeScreen> {
       trailing: const Icon(Icons.chevron_right, size: 20),
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
+    );
+  }
+
+  Future<void> _showTransactionHistory() async {
+    await context.read<BookingProvider>().fetchMyBookings();
+    if (!mounted) return;
+
+    final history = context
+        .read<BookingProvider>()
+        .bookings
+        .where((booking) =>
+            booking.status == 'completed' ||
+            booking.loyaltyRewardEarned ||
+            booking.loyaltyRewardRedeemed)
+        .toList()
+      ..sort((a, b) => (b.createdAt ?? b.bookingDate)
+          .compareTo(a.createdAt ?? a.bookingDate));
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.78,
+        minChildSize: 0.5,
+        maxChildSize: 0.94,
+        builder: (_, controller) => Column(
+          children: [
+            Container(
+              width: 44,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 4, 20, 14),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Transaction History',
+                    style:
+                        TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+              ),
+            ),
+            Expanded(
+              child: history.isEmpty
+                  ? const Center(
+                      child:
+                          Text('No completed bookings or reward activity yet.'))
+                  : ListView.separated(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: history.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, index) {
+                        final booking = history[index];
+                        return Container(
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(booking.displayTitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700)),
+                                  ),
+                                  Text(
+                                      '\$${booking.totalPrice.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                          color: Color(0xFF0F766E),
+                                          fontWeight: FontWeight.w800)),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                DateFormat('MMM d, yyyy')
+                                    .format(booking.bookingDate),
+                                style: const TextStyle(
+                                    color: Color(0xFF64748B), fontSize: 12),
+                              ),
+                              if (booking.loyaltyRewardEarned ||
+                                  booking.loyaltyRewardRedeemed) ...[
+                                const SizedBox(height: 10),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 6,
+                                  children: [
+                                    if (booking.loyaltyRewardEarned)
+                                      _buildHistoryTag(
+                                          'Reward earned', Icons.card_giftcard),
+                                    if (booking.loyaltyRewardRedeemed)
+                                      _buildHistoryTag(
+                                          'Reward redeemed', Icons.redeem),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryTag(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFCCFBF1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF0F766E)),
+          const SizedBox(width: 5),
+          Text(label,
+              style: const TextStyle(
+                  color: Color(0xFF0F766E),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700)),
+        ],
+      ),
     );
   }
 

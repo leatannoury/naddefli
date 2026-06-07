@@ -36,7 +36,12 @@ const User = sequelize.define('User', {
     defaultValue: 'customer',
     comment: 'User role - customer, cleaner, or admin',
   },
-  loyalty_points: {
+  loyalty_progress: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false,
+  },
+  loyalty_rewards_available: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
     allowNull: false,

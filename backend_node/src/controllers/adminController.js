@@ -9,6 +9,7 @@ const {
 } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
+const { awardCleaningMilestone } = require('../utils/loyalty');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -455,19 +456,15 @@ exports.completeBooking = async (req, res) => {
     booking.status = 'completed';
     await booking.save({ transaction: t });
 
-    // Award loyalty point and increment completed count
-    const customer = await User.findByPk(booking.user_id, { transaction: t });
-    if (customer) {
-      customer.completed_bookings_count = (customer.completed_bookings_count || 0) + 1;
-      customer.loyalty_points = (customer.loyalty_points || 0) + 1;
-      await customer.save({ transaction: t });
-    }
+    const { rewardEarned } = await awardCleaningMilestone(booking.user_id, booking, t);
 
     // Notify Customer
     await Notification.create({
       user_id: booking.user_id,
       title: 'Booking Completed',
-      body: `Your cleaning booking at ${booking.address} has been completed! You earned 1 loyalty point.`,
+      body: rewardEarned
+        ? `Your cleaning booking at ${booking.address} is complete. You unlocked a free normal cleaning reward!`
+        : `Your cleaning booking at ${booking.address} is complete. Your loyalty circle was filled.`,
       is_read: false
     }, { transaction: t });
 
@@ -515,7 +512,7 @@ exports.getAllUsers = async (req, res) => {
  */
 exports.createCustomer = async (req, res) => {
   try {
-    const { full_name, email, phone, password, loyalty_points, is_blocked } = req.body;
+    const { full_name, email, phone, password, loyalty_rewards_available, is_blocked } = req.body;
 
     if (!full_name || !email || !password) {
       return sendError(res, 'Name, email, and password are required', 400);
@@ -533,7 +530,7 @@ exports.createCustomer = async (req, res) => {
       phone,
       password: hashedPassword,
       role: 'customer',
-      loyalty_points: parseInt(loyalty_points, 10) || 0,
+      loyalty_rewards_available: parseInt(loyalty_rewards_available, 10) || 0,
       is_blocked: !!is_blocked,
     });
 
@@ -553,7 +550,7 @@ exports.createCustomer = async (req, res) => {
 exports.updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    const { full_name, email, phone, password, loyalty_points, is_blocked } = req.body;
+    const { full_name, email, phone, password, loyalty_rewards_available, is_blocked } = req.body;
 
     const user = await User.findByPk(id);
     if (!user || user.role !== 'customer') {
@@ -564,7 +561,9 @@ exports.updateCustomer = async (req, res) => {
     if (email !== undefined) user.email = email;
     if (phone !== undefined) user.phone = phone;
     if (password) user.password = await hashPassword(password);
-    if (loyalty_points !== undefined) user.loyalty_points = parseInt(loyalty_points, 10) || 0;
+    if (loyalty_rewards_available !== undefined) {
+      user.loyalty_rewards_available = parseInt(loyalty_rewards_available, 10) || 0;
+    }
     if (is_blocked !== undefined) user.is_blocked = !!is_blocked;
 
     await user.save();

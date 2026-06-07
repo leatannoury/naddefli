@@ -6,5 +6,6 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const NaddefliApp());
     expect(find.byType(NaddefliApp), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
   });
 }

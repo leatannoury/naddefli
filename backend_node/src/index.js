@@ -129,6 +129,26 @@ const ensureBookingColumns = async () => {
     });
     console.log('✅ Added completed_bookings_count column to users table');
   }
+  if (!usersTable.loyalty_progress) {
+    await queryInterface.addColumn('users', 'loyalty_progress', {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    });
+    await sequelize.query(
+      'UPDATE users SET loyalty_progress = completed_bookings_count % 4'
+    );
+  }
+  if (!usersTable.loyalty_rewards_available) {
+    await queryInterface.addColumn('users', 'loyalty_rewards_available', {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    });
+    await sequelize.query(
+      'UPDATE users SET loyalty_rewards_available = CAST(loyalty_points / 4 AS INTEGER)'
+    );
+  }
   if (!usersTable.is_blocked) {
     await queryInterface.addColumn('users', 'is_blocked', {
       type: DataTypes.BOOLEAN,
@@ -210,6 +230,8 @@ const ensureBookingColumns = async () => {
     duration_hours: { type: DataTypes.DECIMAL(5, 2), defaultValue: 1.0 },
     discount_amount: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.0 },
     promo_code: { type: DataTypes.STRING(50), allowNull: true },
+    loyalty_reward_earned: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
+    loyalty_reward_redeemed: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
   };
 
   for (const [name, definition] of Object.entries(bookingColumns)) {

@@ -2,9 +2,10 @@ const { Booking, Service, User, Cleaner, Notification, Review, Address, AddOn } 
 const { calculatePrice } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
+const { awardCleaningMilestone } = require('../utils/loyalty');
 
 /**
- * Helper to auto-complete past bookings and award loyalty points
+ * Helper to auto-complete past bookings and advance loyalty milestones
  */
 const autoCompletePastBookings = async (userId) => {
   const now = new Date();
@@ -31,19 +32,15 @@ const autoCompletePastBookings = async (userId) => {
           booking.status = 'completed';
           await booking.save({ transaction: t });
 
-          // Award loyalty points & increment completed bookings count
-          const user = await User.findByPk(userId, { transaction: t });
-          if (user) {
-            user.completed_bookings_count = (user.completed_bookings_count || 0) + 1;
-            user.loyalty_points = (user.loyalty_points || 0) + 1;
-            await user.save({ transaction: t });
-          }
+          const { rewardEarned } = await awardCleaningMilestone(userId, booking, t);
 
           // Create notification
           await Notification.create({
             user_id: userId,
             title: 'Booking Completed',
-            body: `Your booking for ${booking.address} has been completed! You earned 1 loyalty point.`,
+            body: rewardEarned
+              ? `Your booking for ${booking.address} is complete. You unlocked a free normal cleaning reward!`
+              : `Your booking for ${booking.address} is complete. Your loyalty circle was filled.`,
           }, { transaction: t });
         });
       }
@@ -121,15 +118,18 @@ exports.createBooking = async (req, res) => {
       return sendError(res, 'Please choose a future date and time', 400);
     }
 
-    // Loyalty Check
+    // A reward covers only the base price of a custom normal cleaning.
     const user = await User.findByPk(req.user.id, { transaction: t });
     if (redeem_loyalty) {
-      if (!user || user.loyalty_points < 5) {
+      if (!user || user.loyalty_rewards_available < 1) {
         await t.rollback();
-        return sendError(res, 'Insufficient loyalty points to redeem a free clean', 400);
+        return sendError(res, 'No free cleaning reward is available', 400);
       }
-      // Deduct 5 loyalty points
-      user.loyalty_points = Math.max(0, user.loyalty_points - 5);
+      if (!is_custom || String(cleaning_type || '').toLowerCase() !== 'normal') {
+        await t.rollback();
+        return sendError(res, 'Rewards apply only to custom normal cleaning bookings', 400);
+      }
+      user.loyalty_rewards_available -= 1;
       await user.save({ transaction: t });
     }
 
@@ -151,11 +151,12 @@ exports.createBooking = async (req, res) => {
 
     // Calculate price
     const addOnsPrice = await calculateAdminAddOnsTotal(extras, t);
+    const appliedDiscount = redeem_loyalty ? 0.0 : (discount_amount || 0.0);
     const totalPrice = calculatePrice({
       duration_hours: duration_hours || 1,
       cleaning_type: cleaning_type || 'normal',
       add_ons_price: addOnsPrice,
-      discount_amount: discount_amount || 0.0,
+      discount_amount: appliedDiscount,
       redeem_loyalty: redeem_loyalty || false,
     });
 
@@ -173,8 +174,8 @@ exports.createBooking = async (req, res) => {
         city,
         notes,
         total_price: totalPrice,
-        discount_amount: discount_amount || 0.0,
-        promo_code: promo_code || null,
+        discount_amount: appliedDiscount,
+        promo_code: redeem_loyalty ? null : (promo_code || null),
         status: 'pending',
         is_custom: is_custom || false,
         property_type: property_type || 'House/Apartment',
@@ -183,6 +184,7 @@ exports.createBooking = async (req, res) => {
         kitchens_count: kitchens_count || 0,
         cleaning_type: cleaning_type || 'normal',
         extras: typeof extras === 'object' ? JSON.stringify(extras) : extras,
+        loyalty_reward_redeemed: Boolean(redeem_loyalty),
       },
       { transaction: t }
     );
@@ -380,19 +382,15 @@ exports.completeBooking = async (req, res) => {
     booking.status = 'completed';
     await booking.save({ transaction: t });
 
-    // Award loyalty points & completed count
-    const customer = await User.findByPk(booking.user_id, { transaction: t });
-    if (customer) {
-      customer.completed_bookings_count = (customer.completed_bookings_count || 0) + 1;
-      customer.loyalty_points = (customer.loyalty_points || 0) + 1;
-      await customer.save({ transaction: t });
-    }
+    const { rewardEarned } = await awardCleaningMilestone(booking.user_id, booking, t);
 
     // Create notification
     await Notification.create({
       user_id: booking.user_id,
       title: 'Booking Completed',
-      body: `Your booking at ${booking.address} has been completed! You earned 1 loyalty point.`,
+      body: rewardEarned
+        ? `Your booking at ${booking.address} is complete. You unlocked a free normal cleaning reward!`
+        : `Your booking at ${booking.address} is complete. Your loyalty circle was filled.`,
     }, { transaction: t });
 
     await t.commit();

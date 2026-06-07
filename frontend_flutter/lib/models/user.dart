@@ -5,8 +5,9 @@ class User {
   final String email;
   final String? phone;
   final String role; // customer, cleaner, admin
-  final int loyaltyPoints;
   final int completedBookingsCount;
+  final int loyaltyProgress;
+  final int loyaltyRewardsAvailable;
   final DateTime? createdAt;
 
   User({
@@ -15,8 +16,9 @@ class User {
     required this.email,
     this.phone,
     required this.role,
-    this.loyaltyPoints = 0,
     this.completedBookingsCount = 0,
+    this.loyaltyProgress = 0,
+    this.loyaltyRewardsAvailable = 0,
     this.createdAt,
   });
 
@@ -28,8 +30,13 @@ class User {
       email: json['email'] ?? '',
       phone: json['phone'],
       role: json['role'] ?? 'customer',
-      loyaltyPoints: int.tryParse(json['loyalty_points']?.toString() ?? '') ?? 0,
-      completedBookingsCount: int.tryParse(json['completed_bookings_count']?.toString() ?? '') ?? 0,
+      completedBookingsCount:
+          int.tryParse(json['completed_bookings_count']?.toString() ?? '') ?? 0,
+      loyaltyProgress:
+          int.tryParse(json['loyalty_progress']?.toString() ?? '') ?? 0,
+      loyaltyRewardsAvailable:
+          int.tryParse(json['loyalty_rewards_available']?.toString() ?? '') ??
+              0,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -44,8 +51,9 @@ class User {
       'email': email,
       'phone': phone,
       'role': role,
-      'loyalty_points': loyaltyPoints,
       'completed_bookings_count': completedBookingsCount,
+      'loyalty_progress': loyaltyProgress,
+      'loyalty_rewards_available': loyaltyRewardsAvailable,
       'created_at': createdAt?.toIso8601String(),
     };
   }
@@ -57,8 +65,9 @@ class User {
     String? email,
     String? phone,
     String? role,
-    int? loyaltyPoints,
     int? completedBookingsCount,
+    int? loyaltyProgress,
+    int? loyaltyRewardsAvailable,
     DateTime? createdAt,
   }) {
     return User(
@@ -67,8 +76,11 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       role: role ?? this.role,
-      loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
-      completedBookingsCount: completedBookingsCount ?? this.completedBookingsCount,
+      completedBookingsCount:
+          completedBookingsCount ?? this.completedBookingsCount,
+      loyaltyProgress: loyaltyProgress ?? this.loyaltyProgress,
+      loyaltyRewardsAvailable:
+          loyaltyRewardsAvailable ?? this.loyaltyRewardsAvailable,
       createdAt: createdAt ?? this.createdAt,
     );
   }

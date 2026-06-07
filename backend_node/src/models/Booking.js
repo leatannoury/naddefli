@@ -109,6 +109,16 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.STRING(50),
     allowNull: true,
   },
+  loyalty_reward_earned: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+  },
+  loyalty_reward_redeemed: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

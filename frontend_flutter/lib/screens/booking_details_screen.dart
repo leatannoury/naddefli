@@ -420,7 +420,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                             builder: (context) => AlertDialog(
                               title: const Text('Complete Booking'),
                               content: const Text(
-                                'Mark this booking as Completed? You will earn +1 loyalty point!',
+                                'Mark this booking as completed? This will fill the customer loyalty milestone.',
                               ),
                               actions: [
                                 TextButton(
@@ -445,7 +445,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                     content: Text(
-                                        'Booking marked completed! +1 Loyalty point earned!')),
+                                        'Booking marked completed and loyalty progress updated.')),
                               );
                               // Refresh profile
                               Provider.of<AuthProvider>(context, listen: false)

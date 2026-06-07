@@ -142,11 +142,19 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   double _calculateTotal() {
     double subtotal = _calculateSubtotal();
 
-    double finalTotal = subtotal - _discountAmount;
+    double finalTotal =
+        subtotal - (_redeemLoyaltyPoints ? 0.0 : _discountAmount);
     return finalTotal < 0.0 ? 0.0 : finalTotal;
   }
 
   Future<void> _applyPromoCode() async {
+    if (_redeemLoyaltyPoints) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+            'Remove the free cleaning reward before applying a promo code.'),
+      ));
+      return;
+    }
     final code = _promoController.text.trim().toUpperCase();
     if (code.isEmpty) return;
 
@@ -194,7 +202,8 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final userPoints = authProvider.user?.loyaltyPoints ?? 0;
+    final loyaltyProgress = authProvider.user?.loyaltyProgress ?? 0;
+    final rewardsAvailable = authProvider.user?.loyaltyRewardsAvailable ?? 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -214,7 +223,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Loyalty milestones bar
-            if (userPoints > 0)
+            if (loyaltyProgress > 0 || rewardsAvailable > 0)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -258,7 +267,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             ],
                           ),
                         ),
-                        if (userPoints >= 5)
+                        if (rewardsAvailable > 0 && _cleaningType == 'normal')
                           Row(
                             children: [
                               const Text('Redeem',
@@ -275,6 +284,11 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                 onChanged: (val) {
                                   setState(() {
                                     _redeemLoyaltyPoints = val ?? false;
+                                    if (_redeemLoyaltyPoints) {
+                                      _appliedPromoCode = null;
+                                      _discountAmount = 0.0;
+                                      _promoController.clear();
+                                    }
                                   });
                                 },
                               ),
@@ -289,7 +303,9 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              'Total: $userPoints pts',
+                              rewardsAvailable == 1
+                                  ? '1 reward ready'
+                                  : '$rewardsAvailable rewards ready',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -301,10 +317,8 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(5, (index) {
-                        final streakProgress = userPoints % 5;
-                        final isCompleted = index < streakProgress;
-                        final isGift = index == 4;
+                      children: List.generate(4, (index) {
+                        final isCompleted = index < loyaltyProgress;
 
                         return Column(
                           children: [
@@ -324,30 +338,22 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                 ),
                               ),
                               child: Center(
-                                child: isGift
-                                    ? Icon(
-                                        Icons.card_giftcard,
-                                        color: isCompleted
-                                            ? Colors.white
-                                            : Colors.white70,
-                                        size: 20,
-                                      )
-                                    : (isCompleted
-                                        ? const Icon(Icons.check,
-                                            color: Colors.white, size: 20)
-                                        : Text(
-                                            '${index + 1}',
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          )),
+                                child: isCompleted
+                                    ? const Icon(Icons.check,
+                                        color: Colors.white, size: 20)
+                                    : Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              isGift ? 'Reward' : 'Clean ${index + 1}',
+                              'Clean ${index + 1}',
                               style: TextStyle(
                                 color:
                                     isCompleted ? Colors.amber : Colors.white70,
@@ -363,9 +369,9 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      userPoints >= 5
-                          ? '🎉 You unlocked a FREE standard hourly base clean!'
-                          : 'Complete ${5 - (userPoints % 5)} more standard booking(s) to unlock milestone 5!',
+                      rewardsAvailable > 0
+                          ? 'Your free normal cleaning reward is ready to redeem.'
+                          : 'Complete ${4 - loyaltyProgress} more cleaning(s) to unlock a free normal cleaning.',
                       style: const TextStyle(
                           color: Color(0xFFCCFBF1),
                           fontSize: 11.5,
@@ -410,8 +416,10 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                           child: ChoiceChip(
                             label: const Text('Deep'),
                             selected: _cleaningType == 'deep',
-                            onSelected: (_) =>
-                                setState(() => _cleaningType = 'deep'),
+                            onSelected: (_) => setState(() {
+                              _cleaningType = 'deep';
+                              _redeemLoyaltyPoints = false;
+                            }),
                           ),
                         ),
                       ],
@@ -901,7 +909,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                               e.key,
                               '+\$${(_addOnPrices[e.key] ?? 0.0).toStringAsFixed(2)}',
                             )),
-                    if (_discountAmount > 0) ...[
+                    if (_discountAmount > 0 && !_redeemLoyaltyPoints) ...[
                       _buildInvoiceRow('Promo coupon discount',
                           '-\$${_discountAmount.toStringAsFixed(2)}',
                           isDiscount: true),
@@ -1180,6 +1188,8 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     );
 
     if (success) {
+      await context.read<AuthProvider>().getProfile();
+      if (!mounted) return;
       final created = bookingProvider.lastCreatedBooking;
       if (created != null) {
         Navigator.pushReplacementNamed(context, '/booking-confirmation',

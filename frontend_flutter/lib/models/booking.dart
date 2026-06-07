@@ -28,6 +28,8 @@ class Booking {
   final String cleaningType;
   final String? extras;
   final DateTime? createdAt;
+  final bool loyaltyRewardEarned;
+  final bool loyaltyRewardRedeemed;
 
   Booking({
     required this.id,
@@ -55,6 +57,8 @@ class Booking {
     this.cleaningType = 'normal',
     this.extras,
     this.createdAt,
+    this.loyaltyRewardEarned = false,
+    this.loyaltyRewardRedeemed = false,
   });
 
   /// Factory constructor for JSON deserialization
@@ -102,6 +106,10 @@ class Booking {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
+      loyaltyRewardEarned: json['loyalty_reward_earned'] == true ||
+          json['loyalty_reward_earned'] == 1,
+      loyaltyRewardRedeemed: json['loyalty_reward_redeemed'] == true ||
+          json['loyalty_reward_redeemed'] == 1,
     );
   }
 
@@ -133,6 +141,8 @@ class Booking {
       'cleaning_type': cleaningType,
       'extras': extras,
       'created_at': createdAt?.toIso8601String(),
+      'loyalty_reward_earned': loyaltyRewardEarned,
+      'loyalty_reward_redeemed': loyaltyRewardRedeemed,
     };
   }
 
