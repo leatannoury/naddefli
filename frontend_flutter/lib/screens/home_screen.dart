@@ -7,9 +7,12 @@ import '../providers/booking_provider.dart';
 import '../utils/app_styles.dart';
 import '../utils/image_utils.dart';
 import '../services/app_settings_service.dart';
+import '../services/cleaning_tip_service.dart';
 import '../services/notification_service.dart';
 import '../services/http_service.dart';
 import '../utils/constants.dart';
+import '../widgets/cleaning_tip_card.dart';
+import '../widgets/booking_calendar_section.dart';
 
 /// Home Screen
 class HomeScreen extends StatefulWidget {
@@ -24,6 +27,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
   int _bookingTabIndex = 0;
+  int _bookingViewMode = 0; // 0 = list, 1 = calendar
   int _heroPageIndex = 0;
   final PageController _heroPageController =
       PageController(viewportFraction: 0.92);
@@ -35,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'supportEmail': 'support@naddefli.local',
   };
   int _unreadNotifications = 0;
+  Map<String, dynamic>? _cleaningTip;
+  bool _cleaningTipLoading = true;
 
   final List<Map<String, dynamic>> _heroCards = [
     {
@@ -77,7 +83,19 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadAppSettings();
       _loadUnreadNotifications();
       _loadHotOffers();
+      _loadCleaningTip();
     });
+  }
+
+  Future<void> _loadCleaningTip() async {
+    setState(() => _cleaningTipLoading = true);
+    final tip = await CleaningTipService.getTipOfTheDay(forceRefresh: true);
+    if (mounted) {
+      setState(() {
+        _cleaningTip = tip;
+        _cleaningTipLoading = false;
+      });
+    }
   }
 
   Future<void> _loadHotOffers() async {
@@ -189,7 +207,51 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadAppSettings(),
       _loadUnreadNotifications(),
       _loadHotOffers(),
+      _loadCleaningTip(),
     ]);
+  }
+
+  Widget _buildSectionHeader(
+    String title, {
+    IconData? icon,
+    String? subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppStyles.radiusSmall),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppStyles.sectionTitle, maxLines: 2),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: AppStyles.sectionSubtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _isUpcomingBooking(dynamic booking, DateTime now) {
@@ -294,27 +356,26 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: AppStyles.paddingLarge),
             _buildLoyaltyStreakCard(),
             const SizedBox(height: AppStyles.paddingLarge),
+            _buildSectionHeader(
+              'Cleaning Tip of the Day',
+              icon: Icons.lightbulb_outline_rounded,
+              subtitle: 'Fresh advice to keep your home spotless',
+            ),
+            const SizedBox(height: AppStyles.paddingSmall),
+            CleaningTipCard(
+              tip: _cleaningTip,
+              isLoading: _cleaningTipLoading,
+            ),
+            const SizedBox(height: AppStyles.paddingLarge),
             _buildOffersSection(),
             const SizedBox(height: AppStyles.paddingXLarge),
             Padding(
               key: _servicesSectionKey,
-              padding: const EdgeInsets.fromLTRB(
-                AppStyles.marginMobile,
-                0,
-                AppStyles.marginMobile,
-                AppStyles.paddingSmall,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Our Services',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.only(bottom: AppStyles.paddingSmall),
+              child: _buildSectionHeader(
+                'Our Services',
+                icon: Icons.cleaning_services_rounded,
+                subtitle: 'Tap a service to book instantly',
               ),
             ),
 
@@ -374,9 +435,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 horizontal: AppStyles.marginMobile,
               ),
               child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppStyles.radiusXL),
+                decoration: AppDecorations.gradientCard(
+                  colors: const [AppColors.secondary, AppColors.secondaryContainer],
                 ),
                 padding: const EdgeInsets.all(AppStyles.paddingLarge),
                 child: Column(
@@ -601,20 +661,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppStyles.radiusXL),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(AppStyles.paddingMedium),
+        decoration: AppDecorations.elevatedCard(radius: AppStyles.radiusXL),
+        padding: const EdgeInsets.all(AppStyles.paddingLarge),
         child: Row(
           children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primaryContainer,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+              ),
+              child: const Icon(
+                Icons.calendar_month_rounded,
+                color: AppColors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -623,20 +691,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Book Your Cleaning Now',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       height: 1.2,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     'Customize and get instant pricing',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.onSurfaceVariant,
-                      height: 1.3,
-                    ),
+                    style: AppStyles.sectionSubtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -650,10 +714,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 padding: const EdgeInsets.all(12),
                 child: const Icon(
-                  Icons.arrow_forward,
+                  Icons.arrow_forward_rounded,
                   color: AppColors.white,
                   size: 20,
                 ),
@@ -666,18 +737,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildOffersSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppStyles.marginMobile,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Hot Offers',
-            style: AppStyles.headlineSmall,
-          ),
-          const SizedBox(height: AppStyles.paddingSmall),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          'Hot Offers',
+          icon: Icons.local_offer_rounded,
+          subtitle: 'Limited-time savings on your next clean',
+        ),
+        const SizedBox(height: AppStyles.paddingSmall),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           if (_offerCards.isEmpty)
             Text(
               'No hot offers currently available.',
@@ -700,8 +773,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-        ],
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -715,20 +790,9 @@ class _HomeScreenState extends State<HomeScreen> {
           padding:
               const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
           child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                    color: Color(0x240D9488),
-                    blurRadius: 12,
-                    offset: Offset(0, 4))
-              ],
+            padding: const EdgeInsets.all(AppStyles.paddingLarge),
+            decoration: AppDecorations.gradientCard(
+              colors: const [AppColors.primary, AppColors.primaryContainer],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,25 +1076,15 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.of(context).pushNamed('/booking', arguments: service);
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        decoration: AppDecorations.elevatedCard(radius: AppStyles.radiusXL),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image/Icon Section
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppStyles.radiusLarge),
-                topRight: Radius.circular(AppStyles.radiusLarge),
+                topLeft: Radius.circular(AppStyles.radiusXL),
+                topRight: Radius.circular(AppStyles.radiusXL),
               ),
               child: SizedBox(
                 height: 120,
@@ -1102,9 +1156,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Consumer<BookingProvider>(
       builder: (context, bookingProvider, _) {
         if (bookingProvider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (bookingProvider.error != null) {
@@ -1134,32 +1186,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
-        if (bookingProvider.bookings.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 64,
-                  color: AppColors.gray.withValues(alpha: 0.5),
-                ),
-                const SizedBox(height: 16),
-                const Text('No bookings yet'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedTabIndex = 0;
-                    });
-                  },
-                  child: const Text('Browse Services'),
-                ),
-              ],
-            ),
-          );
-        }
-
         final now = DateTime.now();
         final List<dynamic> upcoming = bookingProvider.bookings
             .where((dynamic booking) => _isUpcomingBooking(booking, now))
@@ -1182,43 +1208,140 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(AppStyles.paddingLarge),
             children: [
+              _buildSectionHeader(
+                'My Bookings',
+                icon: Icons.calendar_month_rounded,
+                subtitle: _bookingViewMode == 1
+                    ? 'Tap a day to see your scheduled cleans'
+                    : 'Track upcoming, completed, and cancelled jobs',
+              ),
+              const SizedBox(height: AppStyles.paddingBase),
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-                ),
+                decoration: AppDecorations.elevatedCard(),
                 child: Row(
                   children: [
-                    _buildBookingTab('Upcoming', 0, upcoming.length),
-                    _buildBookingTab('Completed', 1, completed.length),
-                    _buildBookingTab('Cancelled', 2, cancelled.length),
+                    _buildViewModeTab('List', 0, Icons.view_list_rounded),
+                    _buildViewModeTab('Calendar', 1, Icons.calendar_month_rounded),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              if (visibleBookings.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(AppStyles.paddingLarge),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+              const SizedBox(height: AppStyles.paddingBase),
+              if (_bookingViewMode == 1) ...[
+                BookingCalendarSection(
+                  bookings: bookingProvider.bookings,
+                  bookingCardBuilder: _buildBookingCard,
+                ),
+              ] else ...[
+                if (bookingProvider.bookings.isEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(AppStyles.paddingXLarge),
+                    decoration: AppDecorations.elevatedCard(radius: AppStyles.radiusXL),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.event_busy_rounded,
+                          size: 56,
+                          color: AppColors.gray.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No bookings yet',
+                          style: AppStyles.sectionTitle,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Book your first cleaning from the home tab.',
+                          textAlign: TextAlign.center,
+                          style: AppStyles.sectionSubtitle,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => setState(() => _selectedTabIndex = 0),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+                            ),
+                          ),
+                          child: const Text('Browse Services'),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(
-                    _bookingTabIndex == 0
-                        ? 'No upcoming bookings.'
-                        : _bookingTabIndex == 1
-                            ? 'No completed bookings yet.'
-                            : 'No cancelled bookings.',
-                    textAlign: TextAlign.center,
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: AppDecorations.elevatedCard(),
+                    child: Row(
+                      children: [
+                        _buildBookingTab('Upcoming', 0, upcoming.length),
+                        _buildBookingTab('Completed', 1, completed.length),
+                        _buildBookingTab('Cancelled', 2, cancelled.length),
+                      ],
+                    ),
                   ),
-                )
-              else
-                ...visibleBookings.map(_buildBookingCard),
+                  const SizedBox(height: 16),
+                  if (visibleBookings.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(AppStyles.paddingLarge),
+                      decoration: AppDecorations.elevatedCard(),
+                      child: Text(
+                        _bookingTabIndex == 0
+                            ? 'No upcoming bookings.'
+                            : _bookingTabIndex == 1
+                                ? 'No completed bookings yet.'
+                                : 'No cancelled bookings.',
+                        textAlign: TextAlign.center,
+                        style: AppStyles.bodyMedium,
+                      ),
+                    )
+                  else
+                    ...visibleBookings.map(_buildBookingCard),
+                ],
+              ],
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildViewModeTab(String label, int index, IconData icon) {
+    final selected = _bookingViewMode == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _bookingViewMode = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppStyles.radiusSmall),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? AppColors.white : AppColors.darkGray,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? AppColors.white : AppColors.darkGray,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1255,51 +1378,86 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: AppStyles.paddingMedium),
-        padding: const EdgeInsets.all(AppStyles.paddingMedium),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-        ),
+        padding: const EdgeInsets.all(AppStyles.paddingLarge),
+        decoration: AppDecorations.elevatedCard(radius: AppStyles.radiusXL),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppStyles.radiusSmall),
+                  ),
+                  child: const Icon(
+                    Icons.cleaning_services_rounded,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     booking.displayTitle,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                    maxLines: 1,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: _getStatusColor(booking.status),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     booking.getStatusLabel(),
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: AppColors.white,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${booking.bookingDate.toString().split(' ')[0]} at ${booking.bookingTime}',
-              style: TextStyle(fontSize: 12, color: AppColors.darkGray),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.schedule_rounded, size: 14, color: AppColors.darkGray),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${booking.bookingDate.toString().split(' ')[0]} at ${booking.bookingTime}',
+                    style: TextStyle(fontSize: 12, color: AppColors.darkGray),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
-            Text(
-              '${booking.address}, ${booking.city}',
-              style: const TextStyle(fontSize: 13),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.location_on_outlined, size: 14, color: AppColors.darkGray),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${booking.address}, ${booking.city}',
+                    style: const TextStyle(fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
@@ -1342,13 +1500,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Profile card
                 Container(
                   padding: const EdgeInsets.all(AppStyles.paddingLarge),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-                  ),
+                  decoration: AppDecorations.elevatedCard(radius: AppStyles.radiusXL),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1356,11 +1510,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           children: [
                             Container(
-                              width: 80,
-                              height: 80,
+                              width: 84,
+                              height: 84,
                               decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(40),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.primaryContainer,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(42),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.25),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
                               child: const Icon(
                                 Icons.person,

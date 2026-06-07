@@ -27,6 +27,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const promoRoutes = require('./routes/promoRoutes');
 const addonRoutes = require('./routes/addonRoutes');
+const cleaningTipRoutes = require('./routes/cleaningTipRoutes');
 const adminController = require('./controllers/adminController');
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/promo', promoRoutes);
 app.use('/api/addons', addonRoutes);
+app.use('/api/cleaning-tips', cleaningTipRoutes);
 app.get('/api/settings/public', adminController.getPublicSettings);
 
 // Development-only debug endpoints
@@ -213,6 +215,49 @@ const ensureBookingColumns = async () => {
   if (!tables.includes('add_ons')) {
     await sequelize.models.AddOn.sync();
     console.log('✅ Created add_ons table');
+  }
+
+  // 3e. Ensure cleaning_tips table exists and seed defaults
+  if (!tables.includes('cleaning_tips')) {
+    await sequelize.models.CleaningTip.sync();
+    console.log('✅ Created cleaning_tips table');
+  }
+  const CleaningTip = sequelize.models.CleaningTip;
+  const tipCount = await CleaningTip.count();
+  if (tipCount === 0) {
+    await CleaningTip.bulkCreate([
+      {
+        title: 'Cloudy Day Window Trick',
+        content: 'Clean windows on cloudy days to avoid streaks from quick drying in direct sunlight.',
+        gradient_start: '#0058BC',
+        gradient_end: '#0070EB',
+      },
+      {
+        title: 'Natural Odor Remover',
+        content: 'Sprinkle baking soda on carpets and upholstery, let sit 15 minutes, then vacuum to remove odors.',
+        gradient_start: '#312E81',
+        gradient_end: '#6366F1',
+      },
+      {
+        title: 'Vacuum Before Mopping',
+        content: 'Always vacuum hard floors before mopping so dirt does not turn into muddy streaks.',
+        gradient_start: '#0F766E',
+        gradient_end: '#14B8A6',
+      },
+      {
+        title: 'Top-Down Cleaning',
+        content: 'Dust shelves and wipe surfaces from top to bottom so falling dust does not re-soil cleaned areas.',
+        gradient_start: '#9A3412',
+        gradient_end: '#F97316',
+      },
+      {
+        title: 'Microfiber Magic',
+        content: 'Use damp microfiber cloths for dusting — they trap particles better than feather dusters.',
+        gradient_start: '#4C4ACA',
+        gradient_end: '#6664E4',
+      },
+    ]);
+    console.log('✅ Seeded default cleaning tips');
   }
 
   // 4. Check and add columns to bookings table

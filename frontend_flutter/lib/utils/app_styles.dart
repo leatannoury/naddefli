@@ -136,4 +136,60 @@ class AppStyles {
     height: 1.27,
     letterSpacing: 0.5,
   );
+
+  static const TextStyle sectionTitle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    height: 1.3,
+    color: AppColors.onSurface,
+    letterSpacing: -0.2,
+  );
+
+  static const TextStyle sectionSubtitle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+    color: AppColors.onSurfaceVariant,
+  );
+}
+
+/// Shared card and layout decorations
+class AppDecorations {
+  static BoxDecoration elevatedCard({
+    Color color = AppColors.white,
+    double radius = AppStyles.radiusLarge,
+  }) {
+    return BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.black.withValues(alpha: 0.05),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+
+  static BoxDecoration gradientCard({
+    required List<Color> colors,
+    double radius = AppStyles.radiusXL,
+  }) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        colors: colors,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(radius),
+      boxShadow: [
+        BoxShadow(
+          color: colors.first.withValues(alpha: 0.28),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
 }

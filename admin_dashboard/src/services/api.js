@@ -178,6 +178,25 @@ export const promosAPI = {
   }
 };
 
+export const cleaningTipsAPI = {
+  getAll: async () => {
+    const res = await api.get('/cleaning-tips/admin');
+    return res.data;
+  },
+  create: async (data) => {
+    const res = await api.post('/cleaning-tips/admin', data);
+    return res.data;
+  },
+  update: async (id, data) => {
+    const res = await api.put(`/cleaning-tips/admin/${id}`, data);
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/cleaning-tips/admin/${id}`);
+    return res.data;
+  },
+};
+
 export const addonsAPI = {
   getAll: async () => {
     const res = await api.get('/addons/admin');

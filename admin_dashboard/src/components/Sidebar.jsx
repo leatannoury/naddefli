@@ -10,7 +10,8 @@ import {
   NotificationsNoneOutlined,
   BarChartOutlined,
   SettingsOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  LightbulbOutlined,
 } from '@mui/icons-material';
 import { Add } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,6 +29,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { text: 'Services', icon: <CleaningServicesOutlined />, path: '/services' },
     { text: 'Promo Codes', icon: <ConfirmationNumberOutlined />, path: '/promos' },
     { text: 'Add-ons', icon: <Add />, path: '/addons' },
+    { text: 'Cleaning Tips', icon: <LightbulbOutlined />, path: '/cleaning-tips' },
     { text: 'Notifications', icon: <NotificationsNoneOutlined />, path: '/notifications' },
     { text: 'Analytics', icon: <BarChartOutlined />, path: '/analytics' },
     { text: 'Settings', icon: <SettingsOutlined />, path: '/settings' },
