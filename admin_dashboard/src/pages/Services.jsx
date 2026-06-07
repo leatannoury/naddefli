@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -22,7 +22,10 @@ import {
   FormControl,
   Select,
   MenuItem,
-  InputLabel
+  InputLabel,
+  CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Add,
@@ -32,10 +35,61 @@ import {
   EditOutlined,
   DeleteOutlined,
   AttachMoney,
-  AccessTime
+  AccessTime,
+  CloudUpload,
+  LinkOutlined,
 } from '@mui/icons-material';
 import { servicesAPI } from '../services/api';
 import { resolveServiceImage } from '../utils/serviceImage';
+
+// ─── Service image card component with error fallback ────────────────────────
+const ServiceCardImage = ({ service }) => {
+  const [failed, setFailed] = useState(false);
+  const src = resolveServiceImage(service);
+
+  if (!src || failed) {
+    return (
+      <Box
+        sx={{
+          height: 140,
+          bgcolor: '#635bff0a',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#635bff',
+        }}
+      >
+        <CleaningServicesOutlined sx={{ fontSize: 40 }} />
+      </Box>
+    );
+  }
+
+  return (
+    <CardMedia
+      component="img"
+      height="140"
+      image={src}
+      alt={service.name}
+      sx={{ objectFit: 'cover' }}
+      onError={() => setFailed(true)}
+    />
+  );
+};
+
+// ─── Image preview in dialog ──────────────────────────────────────────────────
+const ImagePreview = ({ src }) => {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return null;
+  return (
+    <Box
+      component="img"
+      src={src}
+      alt="Preview"
+      onError={() => setFailed(true)}
+      sx={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: '8px', mt: 1 }}
+    />
+  );
+};
 
 const Services = () => {
   const [services, setServices] = useState([]);
@@ -56,9 +110,14 @@ const Services = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formBasePrice, setFormBasePrice] = useState('');
   const [formDuration, setFormDuration] = useState('');
-  const [formImage, setFormImage] = useState('');
-  const [formAddOns, setFormAddOns] = useState([]);
+  const [formImage, setFormImage] = useState(''); // stores the URL or filename after upload
   const [formIsActive, setFormIsActive] = useState(true);
+
+  // Image input mode: 'url' | 'upload'
+  const [imageMode, setImageMode] = useState('url');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadedPreviewUrl, setUploadedPreviewUrl] = useState(''); // full URL for preview after upload
+  const fileInputRef = useRef(null);
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -71,19 +130,7 @@ const Services = () => {
     try {
       const res = await servicesAPI.getAll();
       if (res && res.success) {
-        const normalizedServices = (res.data || []).map((service) => {
-          let addOns = [];
-          if (service.add_ons) {
-            try {
-              addOns = typeof service.add_ons === 'string' ? JSON.parse(service.add_ons) : service.add_ons;
-              if (!Array.isArray(addOns)) addOns = [];
-            } catch (err) {
-              addOns = [];
-            }
-          }
-          return { ...service, add_ons: addOns };
-        });
-        setServices(normalizedServices);
+        setServices(res.data || []);
       }
     } catch (error) {
       console.error('Failed to retrieve services list:', error);
@@ -108,9 +155,10 @@ const Services = () => {
     setFormBasePrice('');
     setFormDuration('');
     setFormImage('');
-    setFormAddOns([]);
     setFormIsActive(true);
     setSelectedService(null);
+    setImageMode('url');
+    setUploadedPreviewUrl('');
   };
 
   // Open Dialog for Create
@@ -127,50 +175,63 @@ const Services = () => {
     setFormDescription(service.description || '');
     setFormBasePrice(service.base_price ? parseFloat(service.base_price).toString() : '');
     setFormDuration(service.duration_hours ? parseFloat(service.duration_hours).toString() : '');
-    setFormImage(service.image || '');
-    setFormAddOns(Array.isArray(service.add_ons) ? service.add_ons : []);
+    // Use image_url if available, otherwise raw image
+    const existingImg = service.image_url || service.image || '';
+    setFormImage(existingImg);
     setFormIsActive(service.is_active !== false);
     setIsEditMode(true);
+    setImageMode('url');
+    setUploadedPreviewUrl('');
     setDialogOpen(true);
   };
 
-  const handleAddOnChange = (index, field, value) => {
-    setFormAddOns((prev) => prev.map((addon, idx) => idx === index ? { ...addon, [field]: value } : addon));
+  // Handle file upload
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const res = await servicesAPI.uploadImage(file);
+      if (res && res.success) {
+        const { filename, image_url } = res.data;
+        setFormImage(filename); // store filename; backend will resolve full URL
+        setUploadedPreviewUrl(image_url || '');
+      } else {
+        alert('Image upload failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Image upload error:', err);
+      const msg = err?.response?.data?.message || err.message;
+      alert(`Image upload failed: ${msg}`);
+    } finally {
+      setUploadingImage(false);
+      // Reset file input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
-  const handleAddOnRow = () => {
-    setFormAddOns((prev) => [...prev, { name: '', price: '' }]);
-  };
-
-  const handleRemoveAddOn = (index) => {
-    setFormAddOns((prev) => prev.filter((_, idx) => idx !== index));
+  // Determine preview URL for the dialog
+  const getDialogPreviewUrl = () => {
+    if (imageMode === 'upload') return uploadedPreviewUrl;
+    return formImage;
   };
 
   // Save Service (Create or Update)
   const handleSaveService = async () => {
-    // Robust validation: trim name, normalize decimal separators, ensure numeric > 0
     const name = (formName || '').toString().trim();
     const normalizeNumber = (v) => {
       if (v === undefined || v === null) return NaN;
       let s = String(v).trim();
       if (s === '') return NaN;
-      // Replace common comma decimal separator
-      s = s.replace(/\u066B/g, '.') // arabic decimal separator
-           .replace(/,/g, '.')
-           .replace(/\u066C/g, '') // arabic thousands separator
-           .replace(/\s+/g, '');
-      // Strip non numeric except dot, minus
+      s = s.replace(/\u066B/g, '.').replace(/,/g, '.').replace(/\u066C/g, '').replace(/\s+/g, '');
       const cleaned = s.replace(/[^0-9.\-]/g, '');
-      if (cleaned === '' ) return NaN;
+      if (cleaned === '') return NaN;
       const n = parseFloat(cleaned);
       return Number.isFinite(n) ? n : NaN;
     };
 
     const basePriceNum = normalizeNumber(formBasePrice);
     const durationNum = normalizeNumber(formDuration);
-
-    // Debug log to help identify edge-cases where values are not parsed as expected
-    console.debug('Service save input', { name, rawBase: formBasePrice, rawDuration: formDuration, basePriceNum, durationNum });
 
     if (!name || Number.isNaN(basePriceNum) || Number.isNaN(durationNum) || basePriceNum <= 0 || durationNum <= 0) {
       alert(`Please provide a valid name, base price (>0) and duration hours (>0).\nParsed values -> name: "${name}", basePrice: ${basePriceNum}, duration: ${durationNum}`);
@@ -183,11 +244,7 @@ const Services = () => {
       base_price: basePriceNum,
       duration_hours: durationNum,
       image: formImage || null,
-      add_ons: formAddOns.filter((addon) => addon.name && addon.price).map((addon) => ({
-        name: addon.name,
-        price: parseFloat(String(addon.price || '').replace(',', '.'))
-      })),
-      is_active: formIsActive
+      is_active: formIsActive,
     };
 
     try {
@@ -218,16 +275,13 @@ const Services = () => {
         name: service.name,
         base_price: service.base_price,
         duration_hours: service.duration_hours,
-        is_active: nextActiveState
+        is_active: nextActiveState,
       });
       if (res && res.success) {
-        // Optimistic / fast visual state sync
-        setServices(prev => prev.map(s => s.id === service.id ? { ...s, is_active: nextActiveState } : s));
+        setServices((prev) => prev.map((s) => (s.id === service.id ? { ...s, is_active: nextActiveState } : s)));
       }
     } catch (err) {
-      console.error('Failed to retrieve services list:', error);
-      const serverMsg = error?.response?.data?.message || error?.response?.data?.error || error.message;
-      alert(`Failed to load services: ${serverMsg}`);
+      console.error('Failed to toggle active state:', err);
     }
   };
 
@@ -252,35 +306,25 @@ const Services = () => {
   };
 
   // Filtering Logic
-  const filteredServices = services.filter((s) => {
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase();
-      const name = s.name?.toLowerCase() || '';
-      const desc = s.description?.toLowerCase() || '';
-      return name.includes(query) || desc.includes(query);
-    }
-    return true;
-  }).sort((a, b) => {
-    if (sortField === 'name_asc') {
-      return (a.name || '').localeCompare(b.name || '');
-    }
-    if (sortField === 'name_desc') {
-      return (b.name || '').localeCompare(a.name || '');
-    }
-    if (sortField === 'price_asc') {
-      return (parseFloat(a.base_price) || 0) - (parseFloat(b.base_price) || 0);
-    }
-    if (sortField === 'price_desc') {
-      return (parseFloat(b.base_price) || 0) - (parseFloat(a.base_price) || 0);
-    }
-    if (sortField === 'duration_asc') {
-      return (parseFloat(a.duration_hours) || 0) - (parseFloat(b.duration_hours) || 0);
-    }
-    if (sortField === 'duration_desc') {
-      return (parseFloat(b.duration_hours) || 0) - (parseFloat(a.duration_hours) || 0);
-    }
-    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-  });
+  const filteredServices = services
+    .filter((s) => {
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        const name = s.name?.toLowerCase() || '';
+        const desc = s.description?.toLowerCase() || '';
+        return name.includes(query) || desc.includes(query);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortField === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+      if (sortField === 'name_desc') return (b.name || '').localeCompare(a.name || '');
+      if (sortField === 'price_asc') return (parseFloat(a.base_price) || 0) - (parseFloat(b.base_price) || 0);
+      if (sortField === 'price_desc') return (parseFloat(b.base_price) || 0) - (parseFloat(a.base_price) || 0);
+      if (sortField === 'duration_asc') return (parseFloat(a.duration_hours) || 0) - (parseFloat(b.duration_hours) || 0);
+      if (sortField === 'duration_desc') return (parseFloat(b.duration_hours) || 0) - (parseFloat(a.duration_hours) || 0);
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -310,10 +354,7 @@ const Services = () => {
               bgcolor: '#fff',
               fontWeight: 600,
               boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
-              '&:hover': {
-                borderColor: '#635bff',
-                bgcolor: '#f6f9fc'
-              }
+              '&:hover': { borderColor: '#635bff', bgcolor: '#f6f9fc' },
             }}
           >
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
@@ -330,7 +371,7 @@ const Services = () => {
               py: 1.2,
               borderRadius: '8px',
               fontWeight: 600,
-              '&:hover': { bgcolor: '#0A2540' }
+              '&:hover': { bgcolor: '#0A2540' },
             }}
           >
             Add Offering
@@ -353,15 +394,15 @@ const Services = () => {
                 bgcolor: '#f6f9fc',
                 '& fieldset': { borderColor: '#e6ebf1' },
                 '&:hover fieldset': { borderColor: '#cbd5e1' },
-                '&.Mui-focused fieldset': { borderColor: '#635bff' }
-              }
+                '&.Mui-focused fieldset': { borderColor: '#635bff' },
+              },
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
                   <Search sx={{ color: '#a3b1c2' }} />
                 </InputAdornment>
-              )
+              ),
             }}
           />
           <FormControl size="small" sx={{ minWidth: 180 }}>
@@ -389,9 +430,7 @@ const Services = () => {
       <Grid container spacing={3}>
         {loading && filteredServices.length === 0 ? (
           <Grid item xs={12}>
-            <Box sx={{ py: 8, textAlign: 'center', color: '#697386' }}>
-              Retrieving platform catalog...
-            </Box>
+            <Box sx={{ py: 8, textAlign: 'center', color: '#697386' }}>Retrieving platform catalog...</Box>
           </Grid>
         ) : filteredServices.length === 0 ? (
           <Grid item xs={12}>
@@ -413,42 +452,28 @@ const Services = () => {
                   position: 'relative',
                   opacity: service.is_active ? 1 : 0.75,
                   transition: 'all 0.25s ease',
-                  '&:hover': {
-                    borderColor: '#cbd5e1',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.015)'
-                  }
+                  '&:hover': { borderColor: '#cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.015)' },
                 }}
               >
-                {/* Fallback image or custom image */}
-                {resolveServiceImage(service) ? (
-                  <CardMedia
-                    component="img"
-                    height="140"
-                    image={resolveServiceImage(service)}
-                    alt={service.name}
-                    sx={{ objectFit: 'cover' }}
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      height: 140,
-                      bgcolor: '#635bff0a',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#635bff'
-                    }}
-                  >
-                    <CleaningServicesOutlined sx={{ fontSize: 40 }} />
-                  </Box>
-                )}
+                <ServiceCardImage service={service} />
 
                 <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#0A2540', letterSpacing: '-0.02em', mb: 1 }}>
                     {service.name}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#697386', mb: 3.5, height: 40, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: '#697386',
+                      mb: 3.5,
+                      height: 40,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                    }}
+                  >
                     {service.description || 'No service summary provided.'}
                   </Typography>
 
@@ -458,7 +483,9 @@ const Services = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <AttachMoney sx={{ color: '#00d4b6', fontSize: 20 }} />
                       <Box>
-                        <Typography variant="caption" sx={{ color: '#697386', display: 'block', fontWeight: 500 }}>BASE PRICE</Typography>
+                        <Typography variant="caption" sx={{ color: '#697386', display: 'block', fontWeight: 500 }}>
+                          BASE PRICE
+                        </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: '#0A2540' }}>
                           ${parseFloat(service.base_price).toFixed(2)}
                         </Typography>
@@ -468,44 +495,15 @@ const Services = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <AccessTime sx={{ color: '#635bff', fontSize: 20 }} />
                       <Box>
-                        <Typography variant="caption" sx={{ color: '#697386', display: 'block', fontWeight: 500 }}>EST. TIME</Typography>
+                        <Typography variant="caption" sx={{ color: '#697386', display: 'block', fontWeight: 500 }}>
+                          EST. TIME
+                        </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: '#0A2540' }}>
                           {parseFloat(service.duration_hours)} hours
                         </Typography>
                       </Box>
                     </Box>
                   </Stack>
-
-                  {service.add_ons && service.add_ons.length > 0 && (
-                    <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0A2540' }}>
-                        Available Add-ons
-                      </Typography>
-                      <Stack spacing={1}>
-                        {service.add_ons.map((addon, index) => (
-                          <Box
-                            key={index}
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              p: 1,
-                              borderRadius: '10px',
-                              border: '1px solid #e6ebf1',
-                              bgcolor: '#f6f9fc'
-                            }}
-                          >
-                            <Typography variant="body2" sx={{ color: '#0A2540', fontWeight: 600 }}>
-                              {addon.name}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#424e5e', fontWeight: 700 }}>
-                              ${parseFloat(addon.price || 0).toFixed(2)}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Stack>
-                    </Box>
-                  )}
                 </CardContent>
 
                 <CardActions sx={{ px: 2.5, pb: 2.5, pt: 0, justifyContent: 'space-between', alignItems: 'center' }}>
@@ -517,7 +515,7 @@ const Services = () => {
                         onChange={() => handleToggleActive(service)}
                         sx={{
                           '& .MuiSwitch-switchBase.Mui-checked': { color: '#635bff' },
-                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#635bff' }
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#635bff' },
                         }}
                       />
                     }
@@ -526,10 +524,18 @@ const Services = () => {
                   />
 
                   <Stack direction="row" spacing={0.5}>
-                    <IconButton size="small" onClick={() => handleOpenEdit(service)} sx={{ color: '#0A2540', '&:hover': { bgcolor: '#f6f9fc' } }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenEdit(service)}
+                      sx={{ color: '#0A2540', '&:hover': { bgcolor: '#f6f9fc' } }}
+                    >
                       <EditOutlined fontSize="small" />
                     </IconButton>
-                    <IconButton size="small" onClick={() => handleStartDelete(service)} sx={{ color: '#ff5f5f', '&:hover': { bgcolor: 'rgba(255, 95, 95, 0.05)' } }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleStartDelete(service)}
+                      sx={{ color: '#ff5f5f', '&:hover': { bgcolor: 'rgba(255, 95, 95, 0.05)' } }}
+                    >
                       <DeleteOutlined fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -541,7 +547,13 @@ const Services = () => {
       </Grid>
 
       {/* CRUD dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}
+      >
         <DialogTitle sx={{ fontWeight: 800, color: '#0A2540', pb: 1 }}>
           {isEditMode ? 'Modify Cleaning Service' : 'Add New Service Offering'}
         </DialogTitle>
@@ -555,7 +567,7 @@ const Services = () => {
               placeholder="e.g. Standard Kitchen Deep Cleaning"
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
             />
-            
+
             <TextField
               label="Description"
               fullWidth
@@ -576,9 +588,7 @@ const Services = () => {
                   value={formBasePrice}
                   onChange={(e) => setFormBasePrice(e.target.value)}
                   placeholder="29.99"
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">$</InputAdornment>
-                  }}
+                  InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                 />
               </Grid>
@@ -590,79 +600,85 @@ const Services = () => {
                   value={formDuration}
                   onChange={(e) => setFormDuration(e.target.value)}
                   placeholder="2.5"
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">hrs</InputAdornment>
-                  }}
+                  InputProps={{ endAdornment: <InputAdornment position="end">hrs</InputAdornment> }}
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                 />
               </Grid>
             </Grid>
 
+            {/* Image Section */}
             <Box sx={{ p: 2, borderRadius: '12px', border: '1px solid #e6ebf1', bgcolor: '#f6f9fc' }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0A2540' }}>
-                  Service Add-ons
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={handleAddOnRow}
-                  sx={{ textTransform: 'none', borderRadius: '8px' }}
-                >
-                  Add Option
-                </Button>
-              </Stack>
-              <Stack spacing={2}>
-                {formAddOns.length === 0 ? (
-                  <Typography variant="body2" sx={{ color: '#697386' }}>
-                    No add-ons configured yet. Add extras customers can choose from the service page.
-                  </Typography>
-                ) : (
-                  formAddOns.map((addon, index) => (
-                    <Grid container spacing={1} alignItems="center" key={index}>
-                      <Grid item xs={6}>
-                        <TextField
-                          label="Add-on Name"
-                          fullWidth
-                          value={addon.name}
-                          onChange={(e) => handleAddOnChange(index, 'name', e.target.value)}
-                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                        />
-                      </Grid>
-                      <Grid item xs={4}>
-                        <TextField
-                          label="Price"
-                          fullWidth
-                          type="number"
-                          value={addon.price}
-                          onChange={(e) => handleAddOnChange(index, 'price', e.target.value)}
-                          InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                        />
-                      </Grid>
-                      <Grid item xs={2}>
-                        <IconButton size="small" onClick={() => handleRemoveAddOn(index)} sx={{ color: '#ff5f5f' }}>
-                          <DeleteOutlined fontSize="small" />
-                        </IconButton>
-                      </Grid>
-                    </Grid>
-                  ))
-                )}
-              </Stack>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0A2540', mb: 1.5 }}>
+                Service Banner Image
+              </Typography>
+
+              <ToggleButtonGroup
+                value={imageMode}
+                exclusive
+                onChange={(_, val) => {
+                  if (val) {
+                    setImageMode(val);
+                    setFormImage('');
+                    setUploadedPreviewUrl('');
+                  }
+                }}
+                size="small"
+                sx={{ mb: 2 }}
+              >
+                <ToggleButton value="url" sx={{ textTransform: 'none', px: 2 }}>
+                  <LinkOutlined sx={{ mr: 0.5, fontSize: 18 }} /> URL
+                </ToggleButton>
+                <ToggleButton value="upload" sx={{ textTransform: 'none', px: 2 }}>
+                  <CloudUpload sx={{ mr: 0.5, fontSize: 18 }} /> Upload File
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              {imageMode === 'url' ? (
+                <TextField
+                  label="Image URL"
+                  fullWidth
+                  value={formImage}
+                  onChange={(e) => setFormImage(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                />
+              ) : (
+                <Box>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                  <Button
+                    variant="outlined"
+                    startIcon={uploadingImage ? <CircularProgress size={16} /> : <CloudUpload />}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    fullWidth
+                    sx={{
+                      textTransform: 'none',
+                      borderRadius: '8px',
+                      borderColor: '#635bff',
+                      color: '#635bff',
+                      py: 1.5,
+                      '&:hover': { borderColor: '#0A2540', color: '#0A2540' },
+                    }}
+                  >
+                    {uploadingImage ? 'Uploading...' : formImage ? 'Replace Image' : 'Choose Image File'}
+                  </Button>
+                  {formImage && !uploadingImage && (
+                    <Typography variant="caption" sx={{ color: '#697386', mt: 0.5, display: 'block' }}>
+                      ✓ Image uploaded successfully
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              {/* Image preview */}
+              <ImagePreview src={getDialogPreviewUrl()} />
             </Box>
-
-            {formImage && resolveServiceImage({ image: formImage }) && (
-              <Box component="img" src={resolveServiceImage({ image: formImage })} alt="Preview" sx={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: '8px' }} />
-            )}
-
-            <TextField
-              label="Service Banner Image URL"
-              fullWidth
-              value={formImage}
-              onChange={(e) => setFormImage(e.target.value)}
-              placeholder="e.g. https://images.unsplash.com/photo-kitchen"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-            />
 
             <FormControlLabel
               control={
@@ -671,7 +687,7 @@ const Services = () => {
                   onChange={(e) => setFormIsActive(e.target.checked)}
                   sx={{
                     '& .MuiSwitch-switchBase.Mui-checked': { color: '#635bff' },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#635bff' }
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#635bff' },
                   }}
                 />
               }
@@ -681,7 +697,11 @@ const Services = () => {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1.5 }}>
-          <Button onClick={() => setDialogOpen(false)} variant="outlined" sx={{ textTransform: 'none', borderColor: '#e6ebf1', color: '#0A2540' }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            sx={{ textTransform: 'none', borderColor: '#e6ebf1', color: '#0A2540' }}
+          >
             Cancel
           </Button>
           <Button
@@ -695,13 +715,22 @@ const Services = () => {
       </Dialog>
 
       {/* Delete confirmation dialog */}
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: '12px' } }}>
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        fullWidth
+        maxWidth="xs"
+        PaperProps={{ sx: { borderRadius: '12px' } }}
+      >
         <DialogTitle sx={{ fontWeight: 700, color: '#0A2540', pb: 1 }}>Delete Service?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: '#697386' }}>
-            Are you sure you want to permanently delete <strong>{targetService?.name}</strong> from the cleaning catalog?
-            <br /><br />
-            Historical appointments linking to this service will remain unchanged, but customers won't be able to book it again.
+            Are you sure you want to permanently delete <strong>{targetService?.name}</strong> from the cleaning
+            catalog?
+            <br />
+            <br />
+            Historical appointments linking to this service will remain unchanged, but customers won't be able to
+            book it again.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>

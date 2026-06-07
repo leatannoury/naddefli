@@ -5,6 +5,7 @@ const {
   generateToken,
   parseDashboardDateRange,
   formatServiceRecord,
+  resolveServiceImageUrl,
 } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
@@ -711,7 +712,7 @@ exports.getAllServices = async (req, res) => {
 
 exports.createService = async (req, res) => {
   try {
-    const { name, description, base_price, duration_hours, image, is_active, add_ons } = req.body;
+    const { name, description, base_price, duration_hours, image, is_active } = req.body;
 
     if (!name || !base_price || !duration_hours) {
       return sendError(res, 'Name, base price, and duration are required', 400);
@@ -732,7 +733,7 @@ exports.createService = async (req, res) => {
       base_price: parseFloat(base_price),
       duration_hours: parseFloat(duration_hours),
       image: imageToSave,
-      add_ons: Array.isArray(add_ons) ? add_ons : [],
+      add_ons: [],
       is_active: is_active !== undefined ? !!is_active : true,
     });
 
@@ -746,7 +747,7 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, base_price, duration_hours, image, is_active, add_ons } = req.body;
+    const { name, description, base_price, duration_hours, image, is_active } = req.body;
 
     const service = await Service.findByPk(id);
     if (!service) {
@@ -769,7 +770,6 @@ exports.updateService = async (req, res) => {
     if (base_price !== undefined) service.base_price = parseFloat(base_price);
     if (duration_hours !== undefined) service.duration_hours = parseFloat(duration_hours);
     if (image !== undefined) service.image = imageToSave;
-    if (add_ons !== undefined) service.add_ons = Array.isArray(add_ons) ? add_ons : [];
     if (is_active !== undefined) service.is_active = !!is_active;
 
     await service.save();
@@ -804,6 +804,23 @@ exports.deleteService = async (req, res) => {
   } catch (error) {
     console.error('Delete service error:', error);
     sendError(res, 'Failed to delete service', 500, error);
+  }
+};
+
+/**
+ * Upload Service Image
+ */
+exports.uploadServiceImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return sendError(res, 'No image file provided', 400);
+    }
+    const filename = req.file.filename;
+    const imageUrl = resolveServiceImageUrl(filename);
+    sendSuccess(res, { filename, image_url: imageUrl }, 'Image uploaded successfully', 201);
+  } catch (error) {
+    console.error('Upload service image error:', error);
+    sendError(res, 'Failed to upload image', 500, error);
   }
 };
 

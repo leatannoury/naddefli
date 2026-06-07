@@ -3,6 +3,7 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const notificationController = require('../controllers/notificationController');
 const { authMiddleware, authorizationMiddleware } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 const adminAuth = [authMiddleware, authorizationMiddleware(['admin'])];
 
@@ -36,6 +37,7 @@ router.get('/cleaners', adminAuth, adminController.getAllCleaners);
 
 // Services CRUD
 router.get('/services', adminAuth, adminController.getAllServices);
+router.post('/services/upload', adminAuth, upload.single('image'), adminController.uploadServiceImage);
 router.post('/services', adminAuth, adminController.createService);
 router.put('/services/:id', adminAuth, adminController.updateService);
 router.delete('/services/:id', adminAuth, adminController.deleteService);
