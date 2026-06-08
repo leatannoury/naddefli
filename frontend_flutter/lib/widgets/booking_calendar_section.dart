@@ -39,6 +39,83 @@ class _BookingCalendarSectionState extends State<BookingCalendarSection> {
     return _bookingsByDay[key] ?? [];
   }
 
+  bool _hasBookings(DateTime day) => _getBookingsForDay(day).isNotEmpty;
+
+  Widget _buildDayCell(
+    DateTime day, {
+    bool isSelected = false,
+    bool isToday = false,
+  }) {
+    final hasBookings = _hasBookings(day);
+
+    BoxDecoration decoration;
+    TextStyle textStyle;
+
+    if (isSelected) {
+      decoration = const BoxDecoration(
+        color: AppColors.primary,
+        shape: BoxShape.circle,
+      );
+      textStyle = const TextStyle(
+        color: AppColors.white,
+        fontWeight: FontWeight.w800,
+        fontSize: 14,
+      );
+    } else if (isToday && hasBookings) {
+      decoration = BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.18),
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.primary, width: 2),
+      );
+      textStyle = const TextStyle(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w800,
+        fontSize: 14,
+      );
+    } else if (isToday) {
+      decoration = BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.15),
+        shape: BoxShape.circle,
+      );
+      textStyle = const TextStyle(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w700,
+        fontSize: 14,
+      );
+    } else if (hasBookings) {
+      decoration = BoxDecoration(
+        color: AppColors.secondary.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.secondary.withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+      );
+      textStyle = const TextStyle(
+        color: AppColors.secondary,
+        fontWeight: FontWeight.w800,
+        fontSize: 14,
+      );
+    } else {
+      decoration = const BoxDecoration(shape: BoxShape.circle);
+      textStyle = const TextStyle(
+        color: AppColors.onSurface,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+      );
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.all(5),
+      width: 38,
+      height: 38,
+      decoration: decoration,
+      alignment: Alignment.center,
+      child: Text('${day.day}', style: textStyle),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedBookings = _selectedDay != null
@@ -71,36 +148,17 @@ class _BookingCalendarSectionState extends State<BookingCalendarSection> {
             onPageChanged: (focusedDay) {
               _focusedDay = focusedDay;
             },
-            calendarStyle: CalendarStyle(
+            calendarStyle: const CalendarStyle(
               outsideDaysVisible: false,
-              weekendTextStyle: TextStyle(color: AppColors.onSurfaceVariant),
-              defaultTextStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: AppColors.onSurface,
-              ),
-              todayDecoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              todayTextStyle: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-              selectedDecoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              selectedTextStyle: const TextStyle(
-                color: AppColors.white,
-                fontWeight: FontWeight.w700,
-              ),
-              markerDecoration: const BoxDecoration(
-                color: AppColors.secondary,
-                shape: BoxShape.circle,
-              ),
-              markersMaxCount: 1,
-              markerSize: 6,
-              markerMargin: const EdgeInsets.only(top: 32),
+              markersMaxCount: 0,
+            ),
+            calendarBuilders: CalendarBuilders(
+              defaultBuilder: (context, day, focusedDay) =>
+                  _buildDayCell(day),
+              todayBuilder: (context, day, focusedDay) =>
+                  _buildDayCell(day, isToday: true),
+              selectedBuilder: (context, day, focusedDay) =>
+                  _buildDayCell(day, isSelected: true),
             ),
             headerStyle: HeaderStyle(
               formatButtonVisible: true,
@@ -175,7 +233,7 @@ class _BookingCalendarSectionState extends State<BookingCalendarSection> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Tap a highlighted day to view your bookings.',
+                    'Days with a purple highlight have bookings — tap one to see details.',
                     style: AppStyles.bodyMedium.copyWith(color: AppColors.onSurfaceVariant),
                   ),
                 ),
