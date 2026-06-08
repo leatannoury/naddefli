@@ -5,6 +5,7 @@ const {
   generateToken,
   parseDashboardDateRange,
   formatServiceRecord,
+  formatBookingRecord,
   resolveServiceImageUrl,
 } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
@@ -303,7 +304,7 @@ exports.getAllBookings = async (req, res) => {
       order: [['created_at', 'DESC']],
     });
 
-    sendSuccess(res, bookings);
+    sendSuccess(res, bookings.map(formatBookingRecord));
   } catch (error) {
     console.error('Get bookings error:', error);
     sendError(res, 'Failed to fetch bookings', 500, error);
@@ -343,7 +344,7 @@ exports.getBookingById = async (req, res) => {
       return sendError(res, 'Booking not found', 404);
     }
 
-    sendSuccess(res, booking);
+    sendSuccess(res, formatBookingRecord(booking));
   } catch (error) {
     console.error('Get booking detail error:', error);
     sendError(res, 'Failed to fetch booking detail', 500, error);

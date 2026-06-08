@@ -21,6 +21,7 @@ import {
 } from '@mui/icons-material';
 import { bookingsAPI } from '../services/api';
 import DateFilterBar, { todayStr } from '../components/DateFilterBar';
+import { getBookingServiceLabel } from '../utils/bookingDisplay';
 
 const markNotificationsSeen = () => {
   localStorage.setItem('naddefli_notifications_last_seen', Date.now().toString());
@@ -69,7 +70,7 @@ const Notifications = () => {
           derivedNotifs.push({
             id: `placed-${b.id}`,
             title: 'New Booking',
-            body: `${b.customer?.full_name || 'A customer'} booked ${b.service?.name || 'a cleaning'} for ${new Date(b.booking_date).toLocaleDateString()} at ${b.booking_time}.`,
+            body: `${b.customer?.full_name || 'A customer'} booked ${getBookingServiceLabel(b)} for ${new Date(b.booking_date).toLocaleDateString()} at ${b.booking_time}.`,
             time: placedTime,
             type: 'booking_placed',
             status: isUnread ? 'unread' : 'read',

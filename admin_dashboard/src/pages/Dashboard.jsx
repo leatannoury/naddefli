@@ -13,6 +13,7 @@ import {
 import { dashboardAPI } from '../services/api';
 import StatCard from '../components/StatCard';
 import DateFilterBar, { todayStr } from '../components/DateFilterBar';
+import { getBookingServiceLabel } from '../utils/bookingDisplay';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -237,7 +238,7 @@ const Dashboard = () => {
                   <TableRow key={row.id} sx={{ '&:hover': { bgcolor: '#f6f9fc' } }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.82rem' }}>#{String(row.id || '').slice(0, 8)}</TableCell>
                     <TableCell>{row.customer?.full_name || 'Guest'}</TableCell>
-                    <TableCell>{row.service?.name || 'Cleaning'}</TableCell>
+                    <TableCell>{getBookingServiceLabel(row)}</TableCell>
                     <TableCell sx={{ fontSize: '0.85rem' }}>
                       {new Date(row.booking_date).toLocaleDateString()} at {row.booking_time}
                     </TableCell>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_styles.dart';
+import '../widgets/booking_form_ui.dart';
 
 /// Register Screen
 class RegisterScreen extends StatefulWidget {
@@ -33,29 +34,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: AppColors.surface,
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(AppStyles.paddingLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Create Account', style: AppStyles.headlineMedium),
-              const SizedBox(height: 8),
-              Text(
-                'Join Naddefli today',
-                style: AppStyles.bodyMedium
-                    .copyWith(color: AppColors.darkGray),
-              ),
-              const SizedBox(height: 32),
+        child: Column(
+          children: [
+            Stack(
+              children: [
+                BookingFormUi.authHero(
+                  title: 'Create Account',
+                  subtitle: 'Join Naddefli and book trusted cleaning in minutes.',
+                  icon: Icons.person_add_alt_1_rounded,
+                ),
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppStyles.paddingLarge),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // Full Name
               _buildTextField(
                 label: 'Full Name',
@@ -95,6 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onPressed: authProvider.isLoading
                           ? null
                           : () => _handleRegister(context),
+                      style: BookingFormUi.primaryButtonStyle(),
                       child: authProvider.isLoading
                           ? const SizedBox(
                               height: 20,
@@ -173,8 +179,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -194,15 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColors.primary),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppStyles.radiusMedium),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          ),
+          decoration: BookingFormUi.fieldDecoration(label, icon),
         ),
       ],
     );
@@ -218,26 +218,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextField(
           controller: _passwordController,
           obscureText: !_showPassword,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.lock_outline,
-                color: AppColors.primary),
+          decoration: BookingFormUi.fieldDecoration('Password', Icons.lock_outline).copyWith(
             suffixIcon: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showPassword = !_showPassword;
-                });
-              },
+              onTap: () => setState(() => _showPassword = !_showPassword),
               child: Icon(
                 _showPassword ? Icons.visibility : Icons.visibility_off,
                 color: AppColors.primary,
               ),
             ),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppStyles.radiusMedium),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           ),
         ),
       ],
@@ -254,16 +242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextField(
           controller: _confirmPasswordController,
           obscureText: true,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.lock_outline,
-                color: AppColors.primary),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppStyles.radiusMedium),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          ),
+          decoration: BookingFormUi.fieldDecoration('Confirm Password', Icons.lock_outline),
         ),
       ],
     );

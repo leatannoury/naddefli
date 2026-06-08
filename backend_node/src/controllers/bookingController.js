@@ -1,5 +1,5 @@
 const { Booking, Service, User, Cleaner, Notification, Review, Address, AddOn } = require('../models');
-const { calculatePrice } = require('../utils/helpers');
+const { calculatePrice, formatBookingRecord } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');
 const { awardCleaningMilestone } = require('../utils/loyalty');
@@ -198,11 +198,13 @@ exports.createBooking = async (req, res) => {
 
     await t.commit();
 
+    const created = await Booking.findByPk(booking.id, {
+      include: [{ model: Service, as: 'service' }],
+    });
+
     sendSuccess(
       res,
-      {
-        ...booking.toJSON(),
-      },
+      formatBookingRecord(created || booking),
       'Booking created successfully',
       201
     );
@@ -243,7 +245,7 @@ exports.getMyBookings = async (req, res) => {
       order: [['created_at', 'DESC']],
     });
 
-    sendSuccess(res, bookings);
+    sendSuccess(res, bookings.map(formatBookingRecord));
   } catch (error) {
     console.error('Get bookings error:', error);
     sendError(res, 'Failed to fetch bookings', 500, error);
@@ -295,7 +297,7 @@ exports.getBookingById = async (req, res) => {
       return sendError(res, 'Unauthorized', 403);
     }
 
-    sendSuccess(res, booking);
+    sendSuccess(res, formatBookingRecord(booking));
   } catch (error) {
     console.error('Get booking error:', error);
     sendError(res, 'Failed to fetch booking', 500, error);

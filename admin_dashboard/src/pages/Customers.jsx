@@ -40,6 +40,7 @@ import {
   Star
 } from '@mui/icons-material';
 import { customersAPI } from '../services/api';
+import { getBookingServiceLabel } from '../utils/bookingDisplay';
 import StatCard from '../components/StatCard';
 
 const Customers = () => {
@@ -637,7 +638,7 @@ const Customers = () => {
                       <Box key={booking.id} sx={{ p: 1.5, border: '1px solid #e6ebf1', borderRadius: '8px', bgcolor: '#fff' }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                           <Typography variant="body2" sx={{ fontWeight: 700, color: '#0A2540' }}>
-                            {booking.service?.name || 'Service'}
+                            {getBookingServiceLabel(booking)}
                           </Typography>
                           <Typography variant="caption" sx={{ color: '#697386' }}>
                             {new Date(booking.booking_date).toLocaleDateString()}

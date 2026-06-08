@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Box, Typography, Divider, Chip, List, ListItem, ListItemText, Stack } from '@mui/material';
+import { getBookingServiceLabel } from '../utils/bookingDisplay';
 import {
   CalendarMonth,
   AccessTime,
@@ -138,6 +139,14 @@ const BookingDetails = ({ open, booking, onClose, onAccept, onCancel, onComplete
                   CLEANING SPECIFICATIONS
                 </Typography>
                 <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CleaningServicesOutlined sx={{ color: '#635bff', fontSize: 18 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#0A2540' }}>
+                        {getBookingServiceLabel(booking)}
+                      </Typography>
+                    </Box>
+                  </Grid>
                   <Grid item xs={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <CleaningServicesOutlined sx={{ color: '#635bff', fontSize: 18 }} />

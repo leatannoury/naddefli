@@ -236,6 +236,28 @@ const formatServiceRecord = (service) => {
   };
 };
 
+const getBookingDisplayName = (booking) => {
+  const plain = booking?.toJSON ? booking.toJSON() : { ...(booking || {}) };
+  const isCustom = plain.is_custom === true || plain.is_custom === 1 || plain.is_custom === 'true';
+
+  if (isCustom) {
+    const type = String(plain.cleaning_type || 'normal').toLowerCase() === 'deep' ? 'Deep' : 'Normal';
+    return `Custom Cleaning (${type})`;
+  }
+
+  if (plain.service?.name) return plain.service.name;
+  if (plain.service_name) return plain.service_name;
+  return 'Cleaning Service';
+};
+
+const formatBookingRecord = (booking) => {
+  const plain = booking?.toJSON ? booking.toJSON() : { ...(booking || {}) };
+  return {
+    ...plain,
+    display_service_name: getBookingDisplayName(booking),
+  };
+};
+
 module.exports = {
   hashPassword,
   comparePassword,
@@ -246,4 +268,6 @@ module.exports = {
   normalizePromoCondition,
   evaluatePromoConditions,
   formatServiceRecord,
+  getBookingDisplayName,
+  formatBookingRecord,
 };

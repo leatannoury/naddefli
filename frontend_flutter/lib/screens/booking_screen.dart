@@ -8,6 +8,8 @@ import '../providers/booking_provider.dart';
 import '../providers/address_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/pricing.dart';
+import '../utils/app_styles.dart';
+import '../widgets/booking_form_ui.dart';
 
 class BookingScreen extends StatefulWidget {
   final Service service;
@@ -144,7 +146,7 @@ class _BookingScreenState extends State<BookingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(_promoMessage!),
-            backgroundColor: const Color(0xFF0D9488)),
+            backgroundColor: AppColors.primary),
       );
     } else {
       setState(() {
@@ -166,24 +168,19 @@ class _BookingScreenState extends State<BookingScreen> {
         0; // Rewards are redeemable only from custom booking.
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
-        title: Text(
-          'Book ${widget.service.name}',
-          style: const TextStyle(
-              color: Color(0xFF1E293B),
-              fontWeight: FontWeight.bold,
-              fontSize: 18),
-        ),
-      ),
+      backgroundColor: AppColors.surface,
+      appBar: BookingFormUi.appBar(context, 'Book ${widget.service.name}'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppStyles.paddingBase),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            BookingFormUi.gradientHeader(
+              title: widget.service.name,
+              subtitle: 'Schedule your cleaning, add a promo code, and confirm in a few steps.',
+              icon: Icons.cleaning_services_rounded,
+              colors: const [AppColors.secondary, AppColors.secondaryContainer],
+            ),
             // Loyalty milestones bar
             if (rewardsAvailable > 0)
               Container(
@@ -191,7 +188,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
+                    colors: [AppColors.primary, AppColors.primaryContainer],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -367,7 +364,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Icon(Icons.event, color: Color(0xFF0D9488)),
+                        const Icon(Icons.event, color: AppColors.primary),
                         const SizedBox(width: 12),
                         Expanded(
                           child: InkWell(
@@ -401,7 +398,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             child: Row(
                               children: [
                                 const Icon(Icons.login,
-                                    color: Color(0xFF0D9488)),
+                                    color: AppColors.primary),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
@@ -472,7 +469,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           const Text(
                             'Total Booking Duration:',
                             style: TextStyle(
-                                color: Color(0xFF0D9488),
+                                color: AppColors.primary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600),
                           ),
@@ -522,7 +519,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                   Radio<bool>(
                                     value: true,
                                     groupValue: _useSavedAddress,
-                                    activeColor: const Color(0xFF0D9488),
+                                    activeColor: AppColors.primary,
                                     onChanged: (val) {
                                       setState(() {
                                         _useSavedAddress = true;
@@ -569,7 +566,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                   Radio<bool>(
                                     value: false,
                                     groupValue: _useSavedAddress,
-                                    activeColor: const Color(0xFF0D9488),
+                                    activeColor: AppColors.primary,
                                     onChanged: (val) {
                                       setState(() {
                                         _useSavedAddress = false;
@@ -602,7 +599,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         children: [
                           Checkbox(
                             value: _saveNewAddress,
-                            activeColor: const Color(0xFF0D9488),
+                            activeColor: AppColors.primary,
                             onChanged: (val) {
                               setState(() {
                                 _saveNewAddress = val ?? false;
@@ -625,7 +622,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                 child: ChoiceChip(
                                   label: Text(lbl),
                                   selected: isSelected,
-                                  selectedColor: const Color(0xFF0D9488),
+                                  selectedColor: AppColors.primary,
                                   labelStyle: TextStyle(
                                     color: isSelected
                                         ? Colors.white
@@ -693,7 +690,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         ElevatedButton(
                           onPressed: _applyPromoCode,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E293B),
+                            backgroundColor: AppColors.onSurface,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -715,7 +712,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             child: Text(
                               'Coupon $_appliedPromoCode applied successfully (-\$${_discountAmount.toStringAsFixed(2)})!',
                               style: const TextStyle(
-                                  color: Color(0xFF0D9488),
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13),
                             ),
@@ -729,7 +726,7 @@ class _BookingScreenState extends State<BookingScreen> {
                               });
                             },
                             icon: const Icon(Icons.close,
-                                color: Color(0xFF0D9488)),
+                                color: AppColors.primary),
                             tooltip: 'Remove promo',
                           )
                         ],
@@ -777,11 +774,11 @@ class _BookingScreenState extends State<BookingScreen> {
                         children: [
                           Text('Loyalty reward applied',
                               style: TextStyle(
-                                  color: Color(0xFF0D9488),
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.bold)),
                           Text('Base Rate Free!',
                               style: TextStyle(
-                                  color: Color(0xFF0D9488),
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -799,7 +796,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
-                                color: Color(0xFF0D9488))),
+                                color: AppColors.primary)),
                       ],
                     ),
                   ],
@@ -817,7 +814,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     onPressed:
                         bookingProvider.isLoading ? null : _confirmBooking,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D9488),
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
@@ -849,7 +846,7 @@ class _BookingScreenState extends State<BookingScreen> {
         Text(value,
             style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isDiscount ? Colors.red : const Color(0xFF1E293B),
+                color: isDiscount ? Colors.red : AppColors.onSurface,
                 fontSize: 13)),
       ],
     );
@@ -863,11 +860,11 @@ class _BookingScreenState extends State<BookingScreen> {
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF0D9488)),
+        prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF0D9488), width: 2)),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2)),
       ),
     );
   }

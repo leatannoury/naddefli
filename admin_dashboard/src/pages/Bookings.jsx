@@ -39,6 +39,7 @@ import {
 import { bookingsAPI } from '../services/api';
 import BookingDetails from '../components/BookingDetails';
 import DateFilterBar, { todayStr } from '../components/DateFilterBar';
+import { getBookingServiceLabel } from '../utils/bookingDisplay';
 import { useLocation } from 'react-router-dom';
 
 const Bookings = () => {
@@ -481,7 +482,7 @@ const Bookings = () => {
                     <TableCell>
                       <Stack spacing={0.2}>
                         <Typography variant="body2" sx={{ fontWeight: 600, color: '#424e5e' }}>
-                          {row.service?.name || 'Cleaning Service'}
+                          {getBookingServiceLabel(row)}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#697386' }}>
                           {row.cleaning_type === 'deep' ? 'Deep' : 'Standard'} • {row.duration_hours}h

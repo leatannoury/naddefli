@@ -7,6 +7,7 @@ class Booking {
   final String? cleanerId;
   final String serviceId;
   final String? serviceName;
+  final String? displayServiceName;
   final DateTime bookingDate;
   final String bookingTime;
   final String startTime;
@@ -37,6 +38,7 @@ class Booking {
     this.cleanerId,
     required this.serviceId,
     this.serviceName,
+    this.displayServiceName,
     required this.bookingDate,
     required this.bookingTime,
     required this.startTime,
@@ -71,6 +73,7 @@ class Booking {
         double.tryParse(json['discount_amount']?.toString() ?? '');
     final service = json['service'];
     final serviceName = service is Map ? service['name']?.toString() : null;
+    final displayServiceName = json['display_service_name']?.toString();
 
     return Booking(
       id: json['id'] ?? '',
@@ -78,6 +81,7 @@ class Booking {
       cleanerId: json['cleaner_id'],
       serviceId: json['service_id'] ?? '',
       serviceName: serviceName ?? json['service_name']?.toString(),
+      displayServiceName: displayServiceName,
       bookingDate: dateValue == null
           ? DateTime.now()
           : (DateTime.tryParse(dateValue) ?? DateTime.now()),
@@ -168,8 +172,14 @@ class Booking {
   }
 
   String get displayTitle {
-    if (isCustom) return 'Custom cleaning request';
-    return serviceName ?? propertyType ?? 'Cleaning service';
+    if (displayServiceName != null && displayServiceName!.trim().isNotEmpty) {
+      return displayServiceName!.trim();
+    }
+    if (isCustom) {
+      final type = cleaningType.toLowerCase() == 'deep' ? 'Deep' : 'Normal';
+      return 'Custom Cleaning ($type)';
+    }
+    return serviceName ?? propertyType ?? 'Cleaning Service';
   }
 
   String get cleaningTypeLabel => cleaningType.toLowerCase() == 'deep'

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_styles.dart';
+import '../widgets/booking_form_ui.dart';
 
 /// Login Screen
 class LoginScreen extends StatefulWidget {
@@ -26,49 +27,19 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(AppStyles.paddingLarge),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 24),
-                Center(
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius:
-                              BorderRadius.circular(AppStyles.radiusLarge),
-                        ),
-                        child: const Icon(
-                          Icons.cleaning_services,
-                          color: AppColors.white,
-                          size: 30,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Naddefli',
-                        style: AppStyles.displayLarge,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-                const Text('Welcome Back', style: AppStyles.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  'Login to your account',
-                  style: AppStyles.bodyMedium
-                      .copyWith(color: AppColors.darkGray),
-                ),
-                const SizedBox(height: 32),
+      backgroundColor: AppColors.surface,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            BookingFormUi.authHero(
+              title: 'Welcome Back',
+              subtitle: 'Sign in to book, track cleanings, and manage your home.',
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppStyles.paddingLarge),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Email field
                 _buildTextField(
                   label: 'Email',
@@ -89,12 +60,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: authProvider.isLoading
                             ? null
                             : () => _handleLogin(context),
+                        style: BookingFormUi.primaryButtonStyle(),
                         child: authProvider.isLoading
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
+                                  color: AppColors.white,
                                 ),
                               )
                             : const Text('Login'),
@@ -168,9 +141,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -190,15 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColors.primary),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppStyles.radiusMedium),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          ),
+          decoration: BookingFormUi.fieldDecoration(label, icon),
         ),
       ],
     );
@@ -214,26 +180,14 @@ class _LoginScreenState extends State<LoginScreen> {
         TextField(
           controller: _passwordController,
           obscureText: !_showPassword,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.lock_outline,
-                color: AppColors.primary),
+          decoration: BookingFormUi.fieldDecoration('Password', Icons.lock_outline).copyWith(
             suffixIcon: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showPassword = !_showPassword;
-                });
-              },
+              onTap: () => setState(() => _showPassword = !_showPassword),
               child: Icon(
                 _showPassword ? Icons.visibility : Icons.visibility_off,
                 color: AppColors.primary,
               ),
             ),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppStyles.radiusMedium),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           ),
         ),
       ],

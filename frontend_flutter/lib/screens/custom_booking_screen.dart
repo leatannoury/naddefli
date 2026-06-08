@@ -10,6 +10,8 @@ import '../models/address.dart';
 import '../models/booking_draft.dart';
 import '../utils/pricing.dart';
 import '../services/app_settings_service.dart';
+import '../utils/app_styles.dart';
+import '../widgets/booking_form_ui.dart';
 
 class CustomBookingScreen extends StatefulWidget {
   const CustomBookingScreen({Key? key}) : super(key: key);
@@ -209,7 +211,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(_promoMessage!),
-            backgroundColor: const Color(0xFF0D9488)),
+            backgroundColor: AppColors.primary),
       );
     } else {
       setState(() {
@@ -232,22 +234,19 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
     final rewardsAvailable = authProvider.user?.loyaltyRewardsAvailable ?? 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
-        title: const Text('Book a Cleaning',
-            style: TextStyle(
-                color: Color(0xFF1E293B),
-                fontWeight: FontWeight.bold,
-                fontSize: 18)),
-      ),
+      backgroundColor: AppColors.surface,
+      appBar: BookingFormUi.appBar(context, 'Custom Cleaning'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppStyles.paddingBase),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            BookingFormUi.gradientHeader(
+              title: 'Customize Your Clean',
+              subtitle: 'Pick your cleaning type, schedule, add-ons, and address — all in one flow.',
+              icon: Icons.tune_rounded,
+              colors: const [AppColors.primary, AppColors.primaryContainer],
+            ),
             // Loyalty milestones bar
             if (loyaltyProgress > 0 || rewardsAvailable > 0)
               Container(
@@ -255,7 +254,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
+                    colors: [AppColors.primary, AppColors.primaryContainer],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -476,7 +475,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Icon(Icons.event, color: Color(0xFF0D9488)),
+                        const Icon(Icons.event, color: AppColors.primary),
                         const SizedBox(width: 12),
                         Expanded(
                           child: InkWell(
@@ -509,7 +508,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             child: Row(
                               children: [
                                 const Icon(Icons.login,
-                                    color: Color(0xFF0D9488)),
+                                    color: AppColors.primary),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
@@ -577,7 +576,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                         children: [
                           const Text('Duration:',
                               style: TextStyle(
-                                  color: Color(0xFF0D9488),
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.bold)),
                           Text('${_durationHours.toStringAsFixed(1)} Hours',
                               style: const TextStyle(
@@ -633,7 +632,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
-                                    ? const Color(0xFF0D9488)
+                                    ? AppColors.primary
                                     : const Color(0xFFE2E8F0),
                                 width: isSelected ? 2.0 : 1.0,
                               ),
@@ -645,12 +644,12 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                   height: 24,
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? const Color(0xFF0D9488)
+                                        ? AppColors.primary
                                         : Colors.transparent,
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: isSelected
-                                          ? const Color(0xFF0D9488)
+                                          ? AppColors.primary
                                           : const Color(0xFFCBD5E1),
                                       width: 2,
                                     ),
@@ -669,7 +668,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.w500,
-                                      color: const Color(0xFF1E293B),
+                                      color: AppColors.onSurface,
                                     ),
                                   ),
                                 ),
@@ -729,7 +728,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                   Radio<bool>(
                                     value: true,
                                     groupValue: _useSavedAddress,
-                                    activeColor: const Color(0xFF0D9488),
+                                    activeColor: AppColors.primary,
                                     onChanged: (val) =>
                                         setState(() => _useSavedAddress = true),
                                   ),
@@ -766,7 +765,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                                   Radio<bool>(
                                     value: false,
                                     groupValue: _useSavedAddress,
-                                    activeColor: const Color(0xFF0D9488),
+                                    activeColor: AppColors.primary,
                                     onChanged: (val) => setState(
                                         () => _useSavedAddress = false),
                                   ),
@@ -793,7 +792,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                         children: [
                           Checkbox(
                             value: _saveNewAddress,
-                            activeColor: const Color(0xFF0D9488),
+                            activeColor: AppColors.primary,
                             onChanged: (val) =>
                                 setState(() => _saveNewAddress = val ?? false),
                           ),
@@ -861,7 +860,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                         ElevatedButton(
                           onPressed: _applyPromoCode,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E293B),
+                            backgroundColor: AppColors.onSurface,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -883,7 +882,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             child: Text(
                               'Coupon $_appliedPromoCode applied successfully (-\$${_discountAmount.toStringAsFixed(2)})!',
                               style: const TextStyle(
-                                  color: Color(0xFF0D9488),
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13),
                             ),
@@ -897,7 +896,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                               });
                             },
                             icon: const Icon(Icons.close,
-                                color: Color(0xFF0D9488)),
+                                color: AppColors.primary),
                             tooltip: 'Remove promo',
                           )
                         ],
@@ -953,7 +952,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
-                                color: Color(0xFF0D9488))),
+                                color: AppColors.primary)),
                       ],
                     ),
                   ],
@@ -970,7 +969,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
                   child: ElevatedButton(
                     onPressed: provider.isLoading ? null : _submitRequest,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D9488),
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
@@ -1002,7 +1001,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
         Text(value,
             style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isDiscount ? Colors.red : const Color(0xFF1E293B),
+                color: isDiscount ? Colors.red : AppColors.onSurface,
                 fontSize: 13)),
       ],
     );
@@ -1016,7 +1015,7 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF0D9488)),
+        prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
