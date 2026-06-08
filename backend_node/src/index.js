@@ -28,6 +28,7 @@ const addressRoutes = require('./routes/addressRoutes');
 const promoRoutes = require('./routes/promoRoutes');
 const addonRoutes = require('./routes/addonRoutes');
 const cleaningTipRoutes = require('./routes/cleaningTipRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 const adminController = require('./controllers/adminController');
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/promo', promoRoutes);
 app.use('/api/addons', addonRoutes);
 app.use('/api/cleaning-tips', cleaningTipRoutes);
+app.use('/api/ai', aiRoutes);
 app.get('/api/settings/public', adminController.getPublicSettings);
 
 // Development-only debug endpoints
@@ -333,8 +335,10 @@ const startServer = async () => {
     console.log('✅ Database ready');
 
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
+    const HOST = process.env.HOST || '0.0.0.0';
+    app.listen(PORT, HOST, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
+      console.log(`📱 Phone/emulator: use your PC LAN IP, e.g. http://192.168.1.107:${PORT}`);
       console.log(`📚 API Documentation:`);
       console.log(`   - Auth: POST /api/auth/register, POST /api/auth/login`);
       console.log(`   - Services: GET /api/services`);

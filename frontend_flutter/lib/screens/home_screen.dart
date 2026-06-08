@@ -354,6 +354,8 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: AppStyles.paddingLarge),
             _buildQuickBookingCard(),
             const SizedBox(height: AppStyles.paddingLarge),
+            _buildAiCleaningPlannerCard(),
+            const SizedBox(height: AppStyles.paddingLarge),
             _buildLoyaltyStreakCard(),
             const SizedBox(height: AppStyles.paddingLarge),
             _buildSectionHeader(
@@ -726,6 +728,92 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Icon(
                   Icons.arrow_forward_rounded,
                   color: AppColors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiCleaningPlannerCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppStyles.marginMobile),
+      child: Container(
+        decoration: AppDecorations.gradientCard(
+          colors: const [
+            Color(0xFF6366F1),
+            Color(0xFF8B5CF6),
+          ],
+          radius: AppStyles.radiusXL,
+        ),
+        padding: const EdgeInsets.all(AppStyles.paddingLarge),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: AppColors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'AI Cleaning Planner',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.white,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Find your perfect cleaning service & duration',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.white.withValues(alpha: 0.85),
+                      height: 1.35,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pushNamed('/service-advisor'),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(12),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Color(0xFF6366F1),
                   size: 20,
                 ),
               ),

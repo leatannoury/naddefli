@@ -7,6 +7,7 @@ import '../providers/service_provider.dart';
 import '../providers/address_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/address.dart';
+import '../models/booking_draft.dart';
 import '../utils/pricing.dart';
 import '../services/app_settings_service.dart';
 
@@ -18,6 +19,7 @@ class CustomBookingScreen extends StatefulWidget {
 }
 
 class _CustomBookingScreenState extends State<CustomBookingScreen> {
+  bool _initializedFromDraft = false;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String _startTime = "09:00";
   String _endTime = "13:00";
@@ -48,6 +50,30 @@ class _CustomBookingScreenState extends State<CustomBookingScreen> {
   double _discountAmount = 0.0;
   bool _redeemLoyaltyPoints = false;
   String? _promoMessage;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initializedFromDraft) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is BookingDraft) {
+        setState(() {
+          _propertyType = args.propertyType;
+          _roomCount = args.bedrooms;
+          _bathroomCount = args.bathrooms;
+          _kitchenCount = args.kitchens;
+          _cleaningType = args.cleaningType;
+          _durationHours = args.durationHours;
+          _startTime = args.startTime;
+          _endTime = args.endTime;
+          if (args.notes != null && args.notes!.isNotEmpty) {
+            _notesController.text = args.notes!;
+          }
+        });
+      }
+      _initializedFromDraft = true;
+    }
+  }
 
   @override
   void initState() {

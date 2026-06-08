@@ -1,4 +1,5 @@
-// Use 192.168.1.107 for your physical device (Infinix X6827)
+// Use your PC's LAN IP for physical devices (emulator can use 10.0.2.2:5000).
+// Find yours with: ipconfig  →  IPv4 Address (e.g. 192.168.1.107)
 const String BASE_URL = 'http://192.168.1.107:5000/api';
 const String API_ORIGIN = 'http://192.168.1.107:5000';
 
