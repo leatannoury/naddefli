@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — cleaningTipController.js
+ * Layer: Backend — Controller
+ * Purpose: Tip of the day rotation; admin tips CRUD.
+ * Connects to: CleaningTip model
+ */
+
 const { CleaningTip } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 

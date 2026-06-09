@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — CleaningTips.jsx
+ * Layer: Admin — Page
+ * Purpose: Manage cleaning tips shown in mobile app.
+ * Connects to: /api/cleaning-tips/admin
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Box, Card, Typography, Button, Table, TableBody, TableCell, TableContainer,

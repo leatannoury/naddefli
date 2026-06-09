@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — address_service.dart
+// Layer: Flutter — Service
+// Purpose: CRUD API calls for saved addresses.
+// Connects to: /api/addresses
+// =============================================================================
+
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
 import 'http_service.dart';

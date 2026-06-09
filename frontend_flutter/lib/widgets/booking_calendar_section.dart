@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_calendar_section.dart
+// Layer: Flutter — Widget
+// Purpose: Calendar view in Bookings tab; purple highlight on days with bookings; tap to see list.
+// Connects to: table_calendar package; receives bookings list from parent
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';

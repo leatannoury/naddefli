@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — PromoCode.js
+ * Layer: Backend — Model (DB Table: promo_codes)
+ * Purpose: Promo codes with type, value, JSON conditions, expiry.
+ * Connects to: Used in booking price calculation
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

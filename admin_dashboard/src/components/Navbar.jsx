@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Navbar.jsx
+ * Layer: Admin — Component
+ * Purpose: Top bar with admin name and logout.
+ * Connects to: AuthContext
+ */
+
 import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, IconButton, Badge, Box, Avatar, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import {

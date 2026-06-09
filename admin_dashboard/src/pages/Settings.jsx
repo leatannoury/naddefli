@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Settings.jsx
+ * Layer: Admin — Page
+ * Purpose: Edit business settings: hourly rates, support contact.
+ * Connects to: GET/PUT /api/admin/settings
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,

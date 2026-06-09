@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — http_service.dart
+// Layer: Flutter — Service
+// Purpose: Dio HTTP client wrapper. AuthInterceptor auto-adds Bearer JWT to every request.
+// Connects to: All API calls go through this; reads token from StorageService
+// =============================================================================
+
 import 'package:dio/dio.dart';
 import '../utils/storage_service.dart';
 

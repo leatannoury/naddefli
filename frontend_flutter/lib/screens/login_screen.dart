@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — login_screen.dart
+// Layer: Flutter — Screen
+// Purpose: Login UI: email/password and Google Sign-In buttons.
+// Connects to: AuthProvider → FirebaseAuthService → POST /api/auth/login or /google
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';

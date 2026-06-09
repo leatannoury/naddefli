@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — cleaning_tip_card.dart
+// Layer: Flutter — Widget
+// Purpose: Card on home screen showing daily cleaning tip with gradient background.
+// Connects to: CleaningTipService data
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../utils/app_styles.dart';
 

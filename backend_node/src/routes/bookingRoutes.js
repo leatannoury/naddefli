@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — bookingRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: POST create, GET my-bookings, PUT cancel — customer booking endpoints.
+ * Connects to: bookingController.js + authMiddleware
+ */
+
 const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/bookingController');

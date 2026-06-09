@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — addonRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: Add-ons list (public) and admin CRUD.
+ * Connects to: addonController.js
+ */
+
 const express = require('express');
 const router = express.Router();
 const addonController = require('../controllers/addonController');

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — serviceImage.js
+ * Layer: Admin — Utility
+ * Purpose: Builds full image URL from API base + upload path.
+ * Connects to: Services page
+ */
+
 const API_ORIGIN = 'http://localhost:5000';
 
 /**

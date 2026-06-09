@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — response_model.dart
+// Layer: Flutter — Model
+// Purpose: Generic wrapper for API responses { success, data, message }.
+// Connects to: Used by services parsing JSON
+// =============================================================================
+
 /// API Response Model
 class ApiResponse<T> {
   final bool success;

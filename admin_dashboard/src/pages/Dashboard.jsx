@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Dashboard.jsx
+ * Layer: Admin — Page
+ * Purpose: Overview: stats cards, charts, recent bookings.
+ * Connects to: GET /api/admin/dashboard
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Grid, Card, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import {

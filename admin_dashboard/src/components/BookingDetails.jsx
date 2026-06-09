@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — BookingDetails.jsx
+ * Layer: Admin — Component
+ * Purpose: Modal showing full booking details for admin review.
+ * Connects to: Bookings page
+ */
+
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Box, Typography, Divider, Chip, List, ListItem, ListItemText, Stack } from '@mui/material';
 import { getBookingServiceLabel } from '../utils/bookingDisplay';

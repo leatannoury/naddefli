@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — my_addresses_screen.dart
+// Layer: Flutter — Screen
+// Purpose: List, add, edit, delete saved addresses.
+// Connects to: /api/addresses via AddressProvider
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/address_provider.dart';

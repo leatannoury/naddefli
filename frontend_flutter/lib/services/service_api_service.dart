@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — service_api_service.dart
+// Layer: Flutter — Service
+// Purpose: Fetches service catalog from backend.
+// Connects to: GET /api/services
+// =============================================================================
+
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
 import 'http_service.dart';

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — MainLayout.jsx
+ * Layer: Admin — Layout
+ * Purpose: Sidebar + Navbar wrapper around page content.
+ * Connects to: Sidebar, Navbar components
+ */
+
 import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Box, CssBaseline } from '@mui/material';

@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_details_screen.dart
+// Layer: Flutter — Screen
+// Purpose: View full booking details; customer can cancel if status is pending.
+// Connects to: PUT /api/bookings/cancel/:id
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';

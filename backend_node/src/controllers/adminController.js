@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — adminController.js
+ * Layer: Backend — Controller (ADMIN)
+ * Purpose: Dashboard stats, booking accept/cancel/complete, customer CRUD, services, promos, settings.
+ * Connects to: Most models; settings.json
+ */
+
 const { User, Booking, Cleaner, Review, Service, PromoCode, Address, Notification } = require('../models');
 const {
   hashPassword,

@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — auth_service.dart
+// Layer: Flutter — Service
+// Purpose: Low-level API calls for register, login, get/update profile.
+// Connects to: HttpService → /api/auth/*
+// =============================================================================
+
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
 import '../utils/storage_service.dart';

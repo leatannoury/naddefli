@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — serviceController.js
+ * Layer: Backend — Controller
+ * Purpose: List and get single service from catalog.
+ * Connects to: Service model
+ */
+
 const { Service } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 const { formatServiceRecord } = require('../utils/helpers');

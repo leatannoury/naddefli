@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — notificationController.js
+ * Layer: Backend — Controller
+ * Purpose: List notifications, unread count, mark read.
+ * Connects to: Notification model
+ */
+
 const { Notification } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 

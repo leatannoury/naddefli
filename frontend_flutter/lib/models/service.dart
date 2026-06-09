@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — service.dart
+// Layer: Flutter — Model
+// Purpose: Data class for a catalog cleaning service.
+// Connects to: Parsed from GET /api/services
+// =============================================================================
+
 /// Service Model
 import 'dart:convert';
 class Service {

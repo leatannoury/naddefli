@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — notification_service.dart
+// Layer: Flutter — Service
+// Purpose: Fetch notifications and mark as read.
+// Connects to: /api/notifications
+// =============================================================================
+
 import '../utils/constants.dart';
 import 'http_service.dart';
 

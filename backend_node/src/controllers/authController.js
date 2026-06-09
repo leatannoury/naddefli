@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — authController.js
+ * Layer: Backend — Controller
+ * Purpose: Register (bcrypt hash), login, Google OAuth verify, get/update profile.
+ * Connects to: User model, JWT via helpers.js
+ */
+
 const https = require('https');
 const { User, Cleaner } = require('../models');
 const { hashPassword, comparePassword, generateToken } = require('../utils/helpers');

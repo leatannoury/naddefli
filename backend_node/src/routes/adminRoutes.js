@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — adminRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: All /api/admin/* routes: dashboard, bookings, customers, services, promos, settings.
+ * Connects to: adminController.js + admin role check
+ */
+
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');

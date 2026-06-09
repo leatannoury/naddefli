@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — addressController.js
+ * Layer: Backend — Controller
+ * Purpose: Address CRUD for logged-in customer.
+ * Connects to: Address model
+ */
+
 const { Address } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 

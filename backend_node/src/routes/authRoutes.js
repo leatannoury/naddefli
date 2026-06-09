@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — authRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: Maps /api/auth URLs to authController (register, login, google, profile).
+ * Connects to: authController.js
+ */
+
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');

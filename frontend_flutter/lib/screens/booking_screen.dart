@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_screen.dart
+// Layer: Flutter — Screen
+// Purpose: Book a catalog service: pick date, time, address, optional promo code.
+// Connects to: POST /api/bookings/create via BookingProvider
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — LoadingScreen.jsx
+ * Layer: Admin — Component
+ * Purpose: Full-page loading spinner while data fetches.
+ * Connects to: Used across pages
+ */
+
 import React from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 

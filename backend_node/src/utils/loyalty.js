@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — loyalty.js
+ * Layer: Backend — Utility
+ * Purpose: Awards loyalty milestones: every 4 completed bookings → 1 free reward.
+ * Connects to: Called when booking marked completed
+ */
+
 const { User } = require('../models');
 
 const awardCleaningMilestone = async (userId, booking, transaction) => {

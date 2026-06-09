@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Analytics.jsx
+ * Layer: Admin — Page
+ * Purpose: Analytics charts and reports.
+ * Connects to: Dashboard/analytics API data
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,

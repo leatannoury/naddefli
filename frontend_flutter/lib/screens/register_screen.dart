@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — register_screen.dart
+// Layer: Flutter — Screen
+// Purpose: Registration form: name, email, phone, password.
+// Connects to: AuthProvider → Firebase + POST /api/auth/register
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';

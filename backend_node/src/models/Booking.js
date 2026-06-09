@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Booking.js
+ * Layer: Backend — Model (DB Table: bookings)
+ * Purpose: Booking schema: dates, address, price, status, custom fields, promo, loyalty flags.
+ * Connects to: Core business entity
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

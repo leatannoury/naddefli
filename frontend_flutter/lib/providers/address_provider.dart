@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — address_provider.dart
+// Layer: Flutter — State (Provider)
+// Purpose: Manages saved addresses state for the current user.
+// Connects to: AddressService → /api/addresses
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../models/address.dart';
 import '../services/address_service.dart';

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — CleaningTip.js
+ * Layer: Backend — Model (DB Table: cleaning_tips)
+ * Purpose: Daily tips shown on app home screen.
+ * Connects to: Public API + admin CRUD
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

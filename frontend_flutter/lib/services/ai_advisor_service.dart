@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — ai_advisor_service.dart
+// Layer: Flutter — Service (AI)
+// Purpose: Sends quiz answers to backend AI recommendation endpoint.
+// Connects to: POST /api/ai/service-recommendation
+// =============================================================================
+
 import '../utils/constants.dart';
 import 'http_service.dart';
 

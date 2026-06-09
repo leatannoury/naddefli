@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — user.dart
+// Layer: Flutter — Model
+// Purpose: Data class representing a user (id, name, email, loyalty fields). fromJson/toJson.
+// Connects to: Parsed from /api/auth responses
+// =============================================================================
+
 /// User Model
 class User {
   final String id;

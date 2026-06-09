@@ -1,4 +1,11 @@
 /**
+ * NADDEFLI — response.js
+ * Layer: Backend — Utility
+ * Purpose: Standardized success/error JSON response helpers.
+ * Connects to: Controllers
+ */
+
+/**
  * Standard API Response Format
  */
 const sendSuccess = (res, data, message = 'Success', statusCode = 200) => {

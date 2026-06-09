@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — DateFilterBar.jsx
+ * Layer: Admin — Component
+ * Purpose: Date range picker for filtering booking/customer lists.
+ * Connects to: Bookings, Dashboard pages
+ */
+
 import React from 'react';
 import { Box, Button, TextField, FormControl, InputLabel, Select, MenuItem, Chip, Stack } from '@mui/material';
 import { Today, DateRange, AllInclusive } from '@mui/icons-material';

@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — storage_service.dart
+// Layer: Flutter — Utility
+// Purpose: Saves/loads JWT token and user data on phone using SharedPreferences.
+// Connects to: AuthProvider, HttpService AuthInterceptor
+// =============================================================================
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Shared Preferences Helper

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — helpers.js
+ * Layer: Backend — Utility
+ * Purpose: bcrypt password hash, JWT generate/verify, booking display name formatting.
+ * Connects to: Used across controllers
+ */
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');

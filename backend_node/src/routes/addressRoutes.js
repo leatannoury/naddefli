@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — addressRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: CRUD routes for /api/addresses.
+ * Connects to: addressController.js
+ */
+
 const express = require('express');
 const router = express.Router();
 const addressController = require('../controllers/addressController');

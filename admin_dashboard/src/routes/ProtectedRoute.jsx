@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — ProtectedRoute.jsx
+ * Layer: Admin — Route Guard
+ * Purpose: Redirects to /login if admin is not authenticated.
+ * Connects to: AuthContext
+ */
+
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';

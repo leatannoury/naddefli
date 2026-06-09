@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — upload.js
+ * Layer: Backend — Middleware
+ * Purpose: Multer file upload config for service images → public/uploads/
+ * Connects to: Admin service image upload
+ */
+
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');

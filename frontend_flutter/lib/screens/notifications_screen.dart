@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — notifications_screen.dart
+// Layer: Flutter — Screen
+// Purpose: Shows in-app notifications (booking updates, etc.).
+// Connects to: /api/notifications
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
 import '../utils/app_styles.dart';

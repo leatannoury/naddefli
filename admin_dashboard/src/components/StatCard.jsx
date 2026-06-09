@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — StatCard.jsx
+ * Layer: Admin — Component
+ * Purpose: Reusable metric card for dashboard stats.
+ * Connects to: Dashboard page
+ */
+
 import React from 'react';
 import { Card, Box, Typography } from '@mui/material';
 

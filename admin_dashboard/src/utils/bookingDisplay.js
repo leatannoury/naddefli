@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — bookingDisplay.js
+ * Layer: Admin — Utility
+ * Purpose: Formats booking title: shows "Custom Cleaning (Deep)" vs service name correctly.
+ * Connects to: Bookings page, BookingDetails
+ */
+
 export const getBookingServiceLabel = (booking) => {
   if (!booking) return 'Cleaning Service';
 

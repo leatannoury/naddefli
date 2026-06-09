@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — constants.dart
+// Layer: Flutter — Config
+// Purpose: BASE_URL (API address) and ApiEndpoints class with all REST paths. CHANGE IP HERE for phone testing.
+// Connects to: Used by every service file
+// =============================================================================
+
 // Use your PC's LAN IP for physical devices (emulator can use 10.0.2.2:5000).
 // Find yours with: ipconfig  →  IPv4 Address (e.g. 192.168.1.107)
 const String BASE_URL = 'http://192.168.1.107:5000/api';

@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — onboarding_screen.dart
+// Layer: Flutter — Screen
+// Purpose: First-time user intro slides explaining the app before login.
+// Connects to: Navigates to /login
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../utils/app_styles.dart';
 import '../widgets/booking_form_ui.dart';

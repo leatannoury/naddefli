@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Cleaner.js
+ * Layer: Backend — Model (DB Table: cleaners)
+ * Purpose: Cleaner profile linked to User (experience, rating, availability).
+ * Connects to: Assigned to bookings
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

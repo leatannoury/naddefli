@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking.dart
+// Layer: Flutter — Model
+// Purpose: Data class for a booking. displayTitle shows custom vs service name correctly.
+// Connects to: Parsed from /api/bookings responses
+// =============================================================================
+
 import 'dart:convert';
 
 /// Booking Model

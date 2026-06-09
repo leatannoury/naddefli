@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — api.js
+ * Layer: Admin — API Client
+ * Purpose: Axios instance with JWT from localStorage; all admin API functions.
+ * Connects to: All /api/admin/* endpoints
+ */
+
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';

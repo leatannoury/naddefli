@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — AuthContext.jsx
+ * Layer: Admin — State
+ * Purpose: Admin login state, token storage in localStorage, logout.
+ * Connects to: POST /api/admin/login
+ */
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { authAPI } from '../services/api';
 

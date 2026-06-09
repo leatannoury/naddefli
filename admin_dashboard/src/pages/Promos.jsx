@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Promos.jsx
+ * Layer: Admin — Page
+ * Purpose: Promo code management.
+ * Connects to: /api/admin/promos
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Box,

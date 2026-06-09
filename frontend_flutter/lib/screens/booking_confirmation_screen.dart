@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_confirmation_screen.dart
+// Layer: Flutter — Screen
+// Purpose: Success page shown after a booking is created.
+// Connects to: Receives Booking object via route arguments
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/booking.dart';

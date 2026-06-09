@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — address.dart
+// Layer: Flutter — Model
+// Purpose: Data class for a saved customer address.
+// Connects to: Parsed from /api/addresses
+// =============================================================================
+
 /// Saved Address Model
 class Address {
   final String id;

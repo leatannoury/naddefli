@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Customers.jsx
+ * Layer: Admin — Page
+ * Purpose: Customer list, detail, create, edit, block, delete.
+ * Connects to: /api/admin/customers
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Box,

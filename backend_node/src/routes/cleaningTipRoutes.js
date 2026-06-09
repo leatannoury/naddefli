@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — cleaningTipRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: Cleaning tips public + admin CRUD.
+ * Connects to: cleaningTipController.js
+ */
+
 const express = require('express');
 const router = express.Router();
 const cleaningTipController = require('../controllers/cleaningTipController');

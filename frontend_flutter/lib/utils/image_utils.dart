@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — image_utils.dart
+// Layer: Flutter — Utility
+// Purpose: Builds full image URLs from API_ORIGIN + relative upload path.
+// Connects to: Service images from /uploads
+// =============================================================================
+
 import 'constants.dart';
 
 /// Resolve service image URL from API response or stored path.

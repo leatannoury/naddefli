@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — cleanerRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: Cleaner job accept, status updates, earnings.
+ * Connects to: cleanerController.js
+ */
+
 const express = require('express');
 const router = express.Router();
 const cleanerController = require('../controllers/cleanerController');

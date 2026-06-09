@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_draft.dart
+// Layer: Flutter — Model
+// Purpose: Temporary cleaning plan from AI advisor, passed to CustomBookingScreen to pre-fill form.
+// Connects to: ServiceAdvisorScreen → CustomBookingScreen
+// =============================================================================
+
 class BookingDraft {
   final String propertyType;
   final int bedrooms;

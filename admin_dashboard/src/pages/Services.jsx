@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Services.jsx
+ * Layer: Admin — Page
+ * Purpose: Service catalog CRUD and image upload.
+ * Connects to: /api/admin/services
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,

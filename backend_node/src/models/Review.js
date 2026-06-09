@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Review.js
+ * Layer: Backend — Model (DB Table: reviews)
+ * Purpose: Customer ratings for cleaners after completed jobs.
+ * Connects to: Booking, User, Cleaner
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

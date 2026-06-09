@@ -1,4 +1,11 @@
 /**
+ * NADDEFLI — errorHandler.js
+ * Layer: Backend — Middleware
+ * Purpose: Global Express error handler; returns consistent JSON error responses.
+ * Connects to: Last middleware in index.js
+ */
+
+/**
  * Global Error Handling Middleware
  * Catches and handles all errors
  */

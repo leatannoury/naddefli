@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_service.dart
+// Layer: Flutter — Service
+// Purpose: API calls: create booking, fetch my-bookings, cancel booking.
+// Connects to: HttpService → /api/bookings/*
+// =============================================================================
+
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
 import 'http_service.dart';

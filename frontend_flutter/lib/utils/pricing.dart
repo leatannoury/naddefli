@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — pricing.dart
+// Layer: Flutter — Utility
+// Purpose: Client-side price calculation for custom bookings (hours × rate + add-ons).
+// Connects to: Mirrors backend pricing logic for live UI updates
+// =============================================================================
+
 /// Lebanon/Zahle realistic cleaning pricing (hours + add-ons only).
 class Pricing {
   static const double normalHourlyRate = 4.0;

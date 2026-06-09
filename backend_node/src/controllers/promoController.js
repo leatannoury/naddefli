@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — promoController.js
+ * Layer: Backend — Controller
+ * Purpose: Validate promo codes, apply discounts, list hot offers.
+ * Connects to: PromoCode model
+ */
+
 const { PromoCode, Booking } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 const { evaluatePromoConditions } = require('../utils/helpers');

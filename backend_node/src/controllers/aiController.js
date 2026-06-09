@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — aiController.js
+ * Layer: Backend — Controller (AI)
+ * Purpose: Receives quiz answers, runs rule engine, optionally calls Gemini for summary text.
+ * Connects to: serviceRecommendationEngine.js, geminiService.js
+ */
+
 const { buildRecommendation } = require('../utils/serviceRecommendationEngine');
 const { generateAdvisorSummary } = require('../services/geminiService');
 const { sendSuccess, sendError } = require('../utils/response');

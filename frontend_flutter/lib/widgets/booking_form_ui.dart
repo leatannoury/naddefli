@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_form_ui.dart
+// Layer: Flutter — Widget
+// Purpose: Shared UI components for booking forms (gradient headers, date/time pickers, cards).
+// Connects to: Used by booking_screen and custom_booking_screen
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../utils/app_styles.dart';
 

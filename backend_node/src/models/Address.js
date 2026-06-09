@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Address.js
+ * Layer: Backend — Model (DB Table: addresses)
+ * Purpose: Saved customer addresses.
+ * Connects to: Belongs to User
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

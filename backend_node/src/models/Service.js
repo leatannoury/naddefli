@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Service.js
+ * Layer: Backend — Model (DB Table: services)
+ * Purpose: Service catalog: name, price, duration, image, add_ons JSON, is_active.
+ * Connects to: Referenced by bookings
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

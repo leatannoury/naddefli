@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — serviceRecommendationEngine.js
+ * Layer: Backend — Utility (AI Rules)
+ * Purpose: Deterministic rule engine: quiz answers → cleaning type, hours, price estimate.
+ * Connects to: aiController before Gemini call
+ */
+
 const fs = require('fs');
 const path = require('path');
 

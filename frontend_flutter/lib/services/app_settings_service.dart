@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — app_settings_service.dart
+// Layer: Flutter — Service
+// Purpose: Fetches public business settings (hourly rates, support contact).
+// Connects to: GET /api/settings/public
+// =============================================================================
+
 import '../utils/constants.dart';
 import 'http_service.dart';
 

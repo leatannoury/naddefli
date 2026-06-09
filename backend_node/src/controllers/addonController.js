@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — addonController.js
+ * Layer: Backend — Controller
+ * Purpose: List active add-ons; admin CRUD.
+ * Connects to: AddOn model
+ */
+
 const { AddOn } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 

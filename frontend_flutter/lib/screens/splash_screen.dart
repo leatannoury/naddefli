@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — splash_screen.dart
+// Layer: Flutter — Screen
+// Purpose: Shows splash logo for 2 seconds, checks saved JWT token, routes to Home or Onboarding.
+// Connects to: AuthProvider.initializeAuth()
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -19,15 +26,18 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initializeApp() async {
+    // Show logo for 2 seconds
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
+    // Read saved JWT from phone storage; validate with GET /api/auth/profile
     final authProvider = context.read<AuthProvider>();
     await authProvider.initializeAuth();
 
     if (!mounted) return;
 
+    // Token valid → skip login. No token → show onboarding then login.
     if (authProvider.isAuthenticated) {
       Navigator.of(context).pushReplacementNamed('/home');
     } else {

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Addons.jsx
+ * Layer: Admin — Page
+ * Purpose: Add-on services management.
+ * Connects to: /api/addons/admin
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Box, Card, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, Stack } from '@mui/material';
 import { RefreshOutlined, Add, EditOutlined, DeleteOutlined } from '@mui/icons-material';

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — index.js
+ * Layer: Backend — Models
+ * Purpose: Exports all Sequelize models and defines table relationships (User has many Bookings, etc.).
+ * Connects to: All model files
+ */
+
 const User = require('./User');
 const Cleaner = require('./Cleaner');
 const Service = require('./Service');

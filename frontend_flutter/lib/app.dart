@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — app.dart
+// Layer: Flutter Mobile App — ROOT WIDGET
+// Purpose: Sets up Provider state management and defines all named routes (screens).
+// Connects to: All providers and screens via Navigator routes
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
@@ -25,20 +32,13 @@ class NaddefliApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Provider = app-wide state. Any screen can read/update via context.read/watch.
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ServiceProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => BookingProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AddressProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => AuthProvider()), // login, user, token
+        ChangeNotifierProvider(create: (_) => ServiceProvider()), // service catalog
+        ChangeNotifierProvider(create: (_) => BookingProvider()), // user's bookings
+        ChangeNotifierProvider(create: (_) => AddressProvider()), // saved addresses
       ],
       child: MaterialApp(
         title: 'Naddefli',
@@ -47,7 +47,9 @@ class NaddefliApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           useMaterial3: true,
         ),
+        // First screen shown — checks if user is already logged in
         home: const SplashScreen(),
+        // Named routes: Navigator.pushNamed(context, '/booking', arguments: service)
         routes: {
           '/splash': (context) => const SplashScreen(),
           '/onboarding': (context) => const OnboardingScreen(),

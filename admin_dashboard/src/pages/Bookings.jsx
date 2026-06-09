@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Bookings.jsx
+ * Layer: Admin — Page
+ * Purpose: All bookings list with date/status filters; accept, cancel, complete actions.
+ * Connects to: /api/admin/bookings
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,

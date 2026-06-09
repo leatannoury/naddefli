@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — service_provider.dart
+// Layer: Flutter — State (Provider)
+// Purpose: Loads and caches the service catalog from the API.
+// Connects to: ServiceApiService → GET /api/services
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../models/service.dart';
 import '../services/service_api_service.dart';

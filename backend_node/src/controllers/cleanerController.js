@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — cleanerController.js
+ * Layer: Backend — Controller
+ * Purpose: Cleaner accepts jobs, updates status, views earnings.
+ * Connects to: Booking, Cleaner models
+ */
+
 const { Booking, Cleaner, Review, User, Notification } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');

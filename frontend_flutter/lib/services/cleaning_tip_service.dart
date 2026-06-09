@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — cleaning_tip_service.dart
+// Layer: Flutter — Service
+// Purpose: Fetches tip-of-the-day for home screen.
+// Connects to: GET /api/cleaning-tips/tip-of-the-day
+// =============================================================================
+
 import 'package:flutter/foundation.dart';
 import 'http_service.dart';
 import '../utils/constants.dart';

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Login.jsx
+ * Layer: Admin — Page
+ * Purpose: Admin login form.
+ * Connects to: AuthContext → POST /api/admin/login
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, TextField, Button, Typography, InputAdornment, IconButton, Alert, CircularProgress } from '@mui/material';

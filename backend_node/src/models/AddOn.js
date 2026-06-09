@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — AddOn.js
+ * Layer: Backend — Model (DB Table: add_ons)
+ * Purpose: Extra cleaning services with price.
+ * Connects to: Custom bookings extras field
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

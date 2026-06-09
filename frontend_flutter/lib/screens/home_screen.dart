@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — home_screen.dart
+// Layer: Flutter — Screen (MAIN HUB)
+// Purpose: Bottom navigation with 3 tabs: Home (services/offers), Bookings (list/calendar), Profile.
+// Connects to: ServiceProvider, BookingProvider, navigates to all booking flows
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';

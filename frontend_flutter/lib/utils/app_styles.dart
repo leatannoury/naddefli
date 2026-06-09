@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — app_styles.dart
+// Layer: Flutter — Utility
+// Purpose: AppColors, typography, card decorations — consistent visual design.
+// Connects to: Used by all screens and widgets
+// =============================================================================
+
 import 'package:flutter/material.dart';
 
 /// Material 3 App Colors - Naddefli Design System

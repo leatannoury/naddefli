@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — App.jsx
+ * Layer: Admin Dashboard — ROOT
+ * Purpose: React Router: defines all admin page routes, wraps with AuthProvider.
+ * Connects to: All pages in src/pages/
+ */
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';

@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Notifications.jsx
+ * Layer: Admin — Page
+ * Purpose: Admin notification inbox (pending bookings alert).
+ * Connects to: /api/admin/notifications
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,

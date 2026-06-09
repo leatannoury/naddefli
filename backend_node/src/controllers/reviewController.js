@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — reviewController.js
+ * Layer: Backend — Controller
+ * Purpose: Create review after completed booking; list cleaner reviews.
+ * Connects to: Review model
+ */
+
 const { Review, Booking, Cleaner } = require('../models');
 const { sendSuccess, sendError } = require('../utils/response');
 const sequelize = require('../config/db');

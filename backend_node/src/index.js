@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — index.js
+ * Layer: Backend API — ENTRY POINT
+ * Purpose: Express server: mounts all routes, CORS, static uploads, DB migration on startup, listens on PORT.
+ * Connects to: All route files, Sequelize, database.sqlite
+ */
+
 require('dotenv').config();
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -33,16 +40,16 @@ const adminController = require('./controllers/adminController');
 
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// --- MIDDLEWARE (runs on every request) ---
+app.use(cors()); // Allow Flutter app + admin dashboard to call this API
+app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'))); // Serve service images
 
-// Initialize model associations
+// Link Sequelize models: User hasMany Bookings, etc.
 initializeAssociations();
 
-// API Routes
+// --- API ROUTES (URL prefix → route file → controller → database) ---
 app.use('/api/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);

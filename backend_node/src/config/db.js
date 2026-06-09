@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — db.js
+ * Layer: Backend — Config
+ * Purpose: Creates Sequelize instance connected to SQLite database file.
+ * Connects to: database.sqlite
+ */
+
 const { Sequelize } = require('sequelize');
 const config = require('./database');
 

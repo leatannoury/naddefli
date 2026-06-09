@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Sidebar.jsx
+ * Layer: Admin — Component
+ * Purpose: Left navigation menu linking to all admin pages.
+ * Connects to: React Router NavLink
+ */
+
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Divider, Button } from '@mui/material';

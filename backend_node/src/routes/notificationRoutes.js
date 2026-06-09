@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — notificationRoutes.js
+ * Layer: Backend — Routes
+ * Purpose: User notification list and mark-read.
+ * Connects to: notificationController.js
+ */
+
 const express = require('express');
 const router = express.Router();
 const notificationController = require('../controllers/notificationController');

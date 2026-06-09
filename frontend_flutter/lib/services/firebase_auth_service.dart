@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — firebase_auth_service.dart
+// Layer: Flutter — Service (Firebase)
+// Purpose: Firebase email/password and Google Sign-In, then syncs user with backend API.
+// Connects to: firebase_auth, google_sign_in → backend /api/auth/register|login|google
+// =============================================================================
+
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../utils/constants.dart';

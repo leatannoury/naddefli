@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — User.js
+ * Layer: Backend — Model (DB Table: users)
+ * Purpose: User schema: name, email, bcrypt password, role, loyalty fields, is_blocked.
+ * Connects to: Central to auth and bookings
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

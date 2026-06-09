@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — auth_provider.dart
+// Layer: Flutter — State (Provider)
+// Purpose: Manages login state: user object, JWT token, loading/error. Calls auth services.
+// Connects to: FirebaseAuthService, StorageService, GET /api/auth/profile
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/firebase_auth_service.dart';

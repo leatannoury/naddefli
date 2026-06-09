@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — auth.js
+ * Layer: Backend — Middleware
+ * Purpose: authMiddleware: verifies JWT from Authorization header. authorizationMiddleware: checks user role.
+ * Connects to: Every protected route uses these
+ */
+
 const jwt = require('jsonwebtoken');
 
 /**

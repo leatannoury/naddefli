@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — bookingController.js
+ * Layer: Backend — Controller (CORE BUSINESS)
+ * Purpose: Create booking with price calc, promo, loyalty; list bookings; cancel; auto-complete past jobs.
+ * Connects to: Booking, User, Service, Notification models; loyalty.js
+ */
+
 const { Booking, Service, User, Cleaner, Notification, Review, Address, AddOn } = require('../models');
 const { calculatePrice, formatBookingRecord } = require('../utils/helpers');
 const { sendSuccess, sendError } = require('../utils/response');

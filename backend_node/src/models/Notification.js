@@ -1,3 +1,10 @@
+/**
+ * NADDEFLI — Notification.js
+ * Layer: Backend — Model (DB Table: notifications)
+ * Purpose: In-app notifications per user.
+ * Connects to: Created on booking events
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 

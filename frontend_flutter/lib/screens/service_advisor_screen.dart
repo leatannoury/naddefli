@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — service_advisor_screen.dart
+// Layer: Flutter — Screen (AI FEATURE)
+// Purpose: Quiz UI for AI Cleaning Planner; shows recommendation; "Use This Plan" opens custom booking.
+// Connects to: POST /api/ai/service-recommendation → BookingDraft → CustomBookingScreen
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../models/booking_draft.dart';
 import '../services/ai_advisor_service.dart';

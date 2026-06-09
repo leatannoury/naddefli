@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — custom_booking_screen.dart
+// Layer: Flutter — Screen
+// Purpose: Custom cleaning builder: property type, room counts, deep/normal, add-ons, loyalty redeem.
+// Connects to: POST /api/bookings/create with is_custom=true; can be pre-filled from BookingDraft (AI)
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';

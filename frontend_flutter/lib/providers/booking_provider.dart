@@ -1,3 +1,10 @@
+// =============================================================================
+// NADDEFLI — booking_provider.dart
+// Layer: Flutter — State (Provider)
+// Purpose: Holds user bookings list; create and cancel booking operations.
+// Connects to: BookingService → /api/bookings/*
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import '../models/booking.dart';
 import '../services/booking_service.dart';
